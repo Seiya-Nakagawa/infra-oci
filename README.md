@@ -9,20 +9,20 @@ Oracle Cloud Infrastructure (OCI) 上の個人開発基盤を、インフラの�
 | ------------ | ---- |
 | `terraform/` | VCN・サブネット・Compute インスタンスなどの OCI リソース定義 |
 | `ansible/` | OS・Kubernetes・MySQL の構成管理を行う Playbook と Role |
-| `scripts/` | plan / apply / Ansible 実行 / SSH 接続の補助スクリプト |
-| `docs/` | 要件定義書・設計書・構築手順書・運用証跡 |
+| `scripts/` | このリポジトリ固有のスクリプト（Ansible 実行） |
+| `docs/` | 要件定義書・設計書・構築手順書・運用手順書 |
 
 インフラのライフサイクルは、`terraform/` でインスタンスを作成したうえで `ansible/` で
 OS・ミドルウェアを構成する 2 段構成になっています。
 
 ## 📋 ドキュメント
 
-* **[要件定義書](docs/01.要件定義/要件定義書.md)**: システムの目的、管理対象範囲、機能要件・非機能要件
-* **[基本設計書](docs/02.設計/基本設計書.md)**: システム構成、リソース設計、技術スタック
-* **[OS設計書](docs/02.設計/OS設計書.md)** / **[Kubernetes設計書](docs/02.設計/Kubernetes設計書.md)** / **[MySQL設計書](docs/02.設計/MySQL設計書.md)**: 各レイヤーの詳細設計
-* **[SSH接続手順](docs/03.構築/01_SSH接続手順.md)**: パブリックIPを経由した直接 SSH 接続手順
-* **[Ansibleによるサーバ構成管理](docs/03.構築/02_Ansibleによるサーバ構成管理.md)**: OS / Kubernetes / MySQL の構築手順
-* **[Terraform Cloud セットアップ](TERRAFORM_CLOUD_SETUP.md)**: Workspace の詳細な設定手順やトラブルシューティング
+* **[要件定義書](docs/01.requirements/REQUIREMENTS.md)**: システムの目的、管理対象範囲、機能要件・非機能要件
+* **[基本設計書](docs/02.design/DESIGN.md)**: システム構成、リソース設計、技術スタック
+* **[OS設計書](docs/02.design/90.components/OS設計書.md)** / **[Kubernetes設計書](docs/02.design/90.components/Kubernetes設計書.md)** / **[MySQL設計書](docs/02.design/90.components/MySQL設計書.md)**: 各レイヤーの詳細設計
+* **[Terraform Cloud セットアップ](docs/03.build/01_TerraformCloudセットアップ.md)**: Workspace の設定手順
+* **[Ansibleによるサーバ構成管理](docs/03.build/02_Ansibleによるサーバ構成管理.md)**: OS / Kubernetes / MySQL の構築手順
+* **[SSH接続手順](docs/04.operations/01_SSH接続手順.md)**: パブリックIPを経由した直接 SSH 接続手順
 
 ---
 
@@ -30,7 +30,7 @@ OS・ミドルウェアを構成する 2 段構成になっています。
 
 Terraform Cloud をリモートバックエンドとして利用し、ローカルから `terraform` コマンドを実行する
 **CLI-driven workflow** を採用しています。
-詳細なセットアップ・実行手順は **[TERRAFORM_CLOUD_SETUP.md](./TERRAFORM_CLOUD_SETUP.md)** を参照してください。
+詳細なセットアップ・実行手順は **[Terraform Cloud セットアップ](docs/03.build/01_TerraformCloudセットアップ.md)** を参照してください。
 
 ### メリット
 
@@ -55,11 +55,11 @@ Terraform Cloud の GUI にアクセスし、該当 Workspace の Variables に 
 ### 3. 実行
 
 ```bash
-# fmt → init → plan を実行し、実行計画を terraform/tfplan に保存する
-./scripts/plan_tf.sh
+# fmt → init → validate → plan を実行し、実行計画を terraform/tfplan に保存する
+~/.claude/scripts/tf_plan.sh
 
 # terraform/tfplan を適用する
-./scripts/apply_tf.sh
+~/.claude/scripts/tf_apply.sh
 ```
 
 ### 4. 出力の確認
@@ -100,8 +100,8 @@ chmod 600 ansible/.vault_password
 ### SSH 接続
 
 ```bash
-./scripts/ssh_connect.sh          # ~/.ssh/id_rsa を使用
-./scripts/ssh_connect.sh -i <key> # 秘密鍵を指定
+~/.claude/scripts/tf_ssh_connect.sh          # ~/.ssh/id_rsa を使用
+~/.claude/scripts/tf_ssh_connect.sh -i <key> # 秘密鍵を指定
 ```
 
 ---

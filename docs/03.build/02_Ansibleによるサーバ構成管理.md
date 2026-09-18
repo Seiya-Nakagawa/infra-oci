@@ -23,8 +23,8 @@
 
 OCI 上の Compute インスタンスに対し、Ansible を用いて OS 調整、Kubernetes（シングルノードクラスター）、
 MySQL サーバを構築する手順。各レイヤーの設計は
-[OS設計書](../02.設計/OS設計書.md)、[Kubernetes設計書](../02.設計/Kubernetes設計書.md)、
-[MySQL設計書](../02.設計/MySQL設計書.md) を参照する。
+[OS設計書](../02.design/90.components/OS設計書.md)、[Kubernetes設計書](../02.design/90.components/Kubernetes設計書.md)、
+[MySQL設計書](../02.design/90.components/MySQL設計書.md) を参照する。
 
 ## 2. 前提条件
 
@@ -196,7 +196,7 @@ ansible-playbook -i hosts.yml site.yml --syntax-check
 
 ### 3.4. 構築後の状態検証
 
-プレイブックの実行が正常に完了したら、サーバーに SSH 接続（`./scripts/ssh_connect.sh`）し、各レイヤーが設計書通りに構成されているか検証します。
+プレイブックの実行が正常に完了したら、サーバーに SSH 接続（`~/.claude/scripts/tf_ssh_connect.sh`）し、各レイヤーが設計書通りに構成されているか検証します。
 
 #### 3.4.1. OS レイヤーの検証
 
