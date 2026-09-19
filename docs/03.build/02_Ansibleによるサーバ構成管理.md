@@ -23,8 +23,8 @@
 
 OCI 上の Compute インスタンスに対し、Ansible を用いて OS 調整、Kubernetes（シングルノードクラスター）、
 MySQL サーバを構築する手順。各レイヤーの設計は
-[OS設計書](../02.design/90.components/OS設計書.md)、[Kubernetes設計書](../02.design/90.components/Kubernetes設計書.md)、
-[MySQL設計書](../02.design/90.components/MySQL設計書.md) を参照する。
+[OS詳細設計書](../03.detailed-design/OS詳細設計書.md)、[Kubernetes詳細設計書](../03.detailed-design/Kubernetes詳細設計書.md)、
+[MySQL詳細設計書](../03.detailed-design/MySQL詳細設計書.md) を参照する。
 
 ## 2. 前提条件
 

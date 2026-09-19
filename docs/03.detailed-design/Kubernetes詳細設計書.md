@@ -1,4 +1,4 @@
-# Kubernetes設計書
+# Kubernetes詳細設計書
 
 ## 1. 概要
 

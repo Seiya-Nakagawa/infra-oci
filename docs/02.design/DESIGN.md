@@ -91,9 +91,9 @@ Terraform の state は Terraform Cloud の Workspace で管理する（CLI-driv
 | 要件 | 実現方式 |
 | ---- | -------- |
 | インフラのプロビジョニング | `terraform/` の各 `.tf` で OCI リソースを定義し、cloud-init（`terraform/cloud-init.yaml`）で初期設定を行う |
-| OS 全般設定 | Ansible Role `os`（[OS設計書](90.components/OS設計書.md)） |
-| Kubernetes 環境構築 | Ansible Role `kubernetes`（[Kubernetes設計書](90.components/Kubernetes設計書.md)） |
-| データベース管理 | Ansible Role `mysql`（[MySQL設計書](90.components/MySQL設計書.md)） |
+| OS 全般設定 | Ansible Role `os`（[OS詳細設計書](../03.detailed-design/OS詳細設計書.md)） |
+| Kubernetes 環境構築 | Ansible Role `kubernetes`（[Kubernetes詳細設計書](../03.detailed-design/Kubernetes詳細設計書.md)） |
+| データベース管理 | Ansible Role `mysql`（[MySQL詳細設計書](../03.detailed-design/MySQL詳細設計書.md)） |
 
 `ansible/site.yml` は `os` → `kubernetes` → `mysql` の順に Role を適用する。
 Role 単位で適用する場合は同名のタグ（`--tags os` 等）を使用する。
@@ -123,7 +123,7 @@ Role 単位で適用する場合は同名のタグ（`--tags os` 等）を使用
 ### 4.1. 共通方針
 
 MySQL をホスト OS へ直接インストールし、サービスごとにスキーマを分離する。
-文字コード・照合順序・接続制限などの詳細は [MySQL設計書](90.components/MySQL設計書.md) を参照する。
+文字コード・照合順序・接続制限などの詳細は [MySQL詳細設計書](../03.detailed-design/MySQL詳細設計書.md) を参照する。
 
 ### 4.2. テーブル定義
 
@@ -151,7 +151,7 @@ MySQL をホスト OS へ直接インストールし、サービスごとにス�
 | ---- | -------- |
 | 可用性 | 単一インスタンス構成。障害時は Terraform / Ansible で再構築して復旧する |
 | 性能 | `VM.Standard.A1.Flex`（4 OCPU / 24 GB RAM）を割り当てる |
-| セキュリティ | ネットワークアクセス制御は OCI セキュリティ・リストで一元管理し、OS レイヤーのパケットフィルタは使用しない（[OS設計書 4.2節](90.components/OS設計書.md#42-os内ファイアウォール)）。SSH は公開鍵認証のみ（[OS設計書](90.components/OS設計書.md) 6章）。データベース接続情報は OCI Vault を真実源とし、External Secrets Operator 経由で Kubernetes Secret へ同期する（[MySQL設計書 4.1節](90.components/MySQL設計書.md#41-権限モデル管理者権限--運用権限)） |
+| セキュリティ | ネットワークアクセス制御は OCI セキュリティ・リストで一元管理し、OS レイヤーのパケットフィルタは使用しない（[OS詳細設計書 4.2節](../03.detailed-design/OS詳細設計書.md#42-os内ファイアウォール)）。SSH は公開鍵認証のみ（[OS詳細設計書](../03.detailed-design/OS詳細設計書.md) 6章）。データベース接続情報は OCI Vault を真実源とし、External Secrets Operator 経由で Kubernetes Secret へ同期する（[MySQL詳細設計書 4.1節](../03.detailed-design/MySQL詳細設計書.md#41-権限モデル管理者権限--運用権限)） |
 | バックアップ・リストア | 構成情報は本リポジトリのコードを正とし、環境の再構築でリストアする |
 | 運用・保守 | Terraform / Ansible によるコード管理。サーバ作業の実行コマンドと出力は証跡として記録し、Git 管理の対象外とする |
 | コスト | Always Free 枠の範囲内でリソースを構成する |
