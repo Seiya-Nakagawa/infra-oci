@@ -13,7 +13,7 @@
 | `terraform/` | OCI インフラ定義（VCN・サブネット・Compute・Vault 等）。state は Terraform Cloud（CLI-driven workflow）で管理する |
 | `ansible/` | Compute インスタンスの構成管理。`site.yml` が `os` → `kubernetes` → `mysql` の順に 3 つのロールを適用する |
 | `scripts/` | このリポジトリ固有のスクリプト（`run_ansible.sh`） |
-| `docs/` | 要件定義書・基本設計書・構築手順書・運用手順書 |
+| `docs/` | 要件定義書・基本設計書・詳細設計書・構築手順書 |
 
 インフラのライフサイクルは、`terraform/` でインスタンスを作成したうえで `ansible/` で
 OS・ミドルウェアを構成する 2 段構成になっている。
@@ -28,7 +28,7 @@ OS・ミドルウェアを構成する 2 段構成になっている。
 - plan / apply / SSH 接続はグローバル共通スクリプト（`~/.claude/scripts/tf_plan.sh`・
   `tf_apply.sh`・`tf_ssh_connect.sh`）を既定値のまま使用する
 - Terraform Cloud のセットアップ手順は
-  [01_TerraformCloudセットアップ.md](docs/03.build/01_TerraformCloudセットアップ.md) を参照する
+  [01_TerraformCloudセットアップ.md](docs/04.build/01_TerraformCloudセットアップ.md) を参照する
 
 ### 2.2. Ansible
 

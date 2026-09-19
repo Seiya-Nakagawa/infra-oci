@@ -82,7 +82,7 @@ graph TD
 | シークレット同期 | External Secrets Operator | v2.9.0 |
 
 Terraform の state は Terraform Cloud の Workspace で管理する（CLI-driven workflow）。
-設定手順は [Terraform Cloud セットアップ](../03.build/01_TerraformCloudセットアップ.md) を参照する。
+設定手順は [Terraform Cloud セットアップ](../04.build/01_TerraformCloudセットアップ.md) を参照する。
 
 ## 3. 機能設計
 
