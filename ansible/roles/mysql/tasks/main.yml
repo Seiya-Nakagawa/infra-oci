@@ -90,7 +90,7 @@
   when: not ansible_check_mode
 
 # app-dbuser等のパスワードはOCI Vault（Secrets Management）を真実源として一元管理し、
-# 各プロジェクトの.envへ平文で書き写す運用は行わない（MySQL設計書 4.1節参照）。
+# 各プロジェクトの.envへ平文で書き写す運用は行わない。
 # Ansibleはユーザープリンシパル（ローカルのOCI CLI設定）でSecretを取得する。
 - name: Fetch application user passwords from OCI Vault
   ansible.builtin.command:
@@ -117,7 +117,7 @@
 
 # update_password: on_create を指定しない場合、実行のたびに既存ユーザーの
 # パスワードがOCI Vaultの値で上書きされ、実際にDB側で運用中のパスワードと
-# 乖離した場合に本番DB接続断を引き起こす（2026-09-05に実際に発生）。
+# 乖離した場合に本番DB接続断を引き起こす。
 #
 # community.mysql.mysql_user は password（平文）と plugin を同時に指定すると、
 # ユーザー新規作成時に password 側の分岐が優先され plugin 指定を無視して
@@ -139,7 +139,7 @@
   no_log: true
   when: not ansible_check_mode
 
-# seiya_db は個人名を含むため app-dbuser へ改名した（2026-09-05）。
+# seiya_db は個人名を含むため app-dbuser へ改名した。
 - name: Remove legacy seiya_db user (renamed to app-dbuser)
   mysql_user:
     name: seiya_db
@@ -148,7 +148,7 @@
     login_unix_socket: /var/run/mysqld/mysqld.sock
   when: not ansible_check_mode
 
-# 改名作業中の過渡的な名称として shared_app を一時的に作成したため削除する（2026-09-05）。
+# 改名作業中の過渡的な名称として shared_app を一時的に作成したため削除する。
 - name: Remove transitional shared_app user (renamed to app-dbuser)
   mysql_user:
     name: shared_app

@@ -1,4 +1,4 @@
-# MySQL設計書 - OCI 個人開発基盤
+# MySQL詳細設計書
 
 ## 1. 概要
 
@@ -81,27 +81,3 @@ ClusterSecretStore（Instance Principal）経由で Kubernetes Secret へ同期�
 - **ログイン確認**: `sudo mysql -u root`
 - **設定値確認**: `mysql -u root -e "SHOW VARIABLES LIKE 'character_set_server';"`
 - **データベース一覧**: `mysql -u root -e "SHOW DATABASES;"`
-
-## 6. Ansible 実装ガイド
-
-### 6.1. 変数構造案 (`vars/main.yml`)
-
-```yaml
-mysql_databases:
-  - name: "laravel_db"
-    encoding: "utf8mb4"
-    collation: "utf8mb4_0900_ai_ci"
-
-mysql_users:
-  - name: "laravel_user"
-    oci_secret_name: "app-dbuser-password" # OCI Vaultから取得（4.1節参照）
-    priv: "laravel_db.*:ALL"
-    host: "localhost"
-```
-
-### 6.2. Role 構成案
-
-1. **install**: パッケージ導入。
-2. **config**: `mysqld.cnf` テンプレートの配置と再起動。
-3. **secure**: 匿名ユーザー削除等のセキュリティ設定。
-4. **database**: データベースおよびユーザーの作成（`mysql_db`, `mysql_user` モジュールを使用）。

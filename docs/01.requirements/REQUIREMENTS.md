@@ -122,7 +122,7 @@ ARM アーキテクチャの `VM.Standard.A1.Flex` シェイプを利用し、4 
 - インフラの構成管理は Terraform、サーバの構成管理は Ansible を用いてコード化し、再現性を担保する
 - Terraform は CLI-driven workflow を前提とし、ローカルから `terraform login` を経由して実行する
 - Ansible は役割ごとに Role を分割し、見通しの良いディレクトリ構成とする
-- サーバ作業の証跡は `docs/04.保守・運用/` 配下に記録する
+- サーバ作業の実行コマンドと出力は証跡として記録する
 
 ### 6.6. コスト
 

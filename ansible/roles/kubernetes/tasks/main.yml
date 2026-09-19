@@ -217,8 +217,7 @@
 
 # External Secrets Operator
 # 個人開発プロジェクト間で共有するDBパスワード等を、各プロジェクトの.envへ平文で
-# 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する
-# （基本設計書 1.2節、MySQL設計書 4.1節参照）。
+# 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する。
 # CRD（clustersecretstores/secretstores）のOpenAPIスキーマが大きく、通常の
 # client-side apply が付与する last-applied-configuration アノテーションが
 # Kubernetesのアノテーション上限（262144バイト）を超えるため、--server-side を使う。

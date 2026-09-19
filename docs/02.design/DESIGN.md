@@ -20,8 +20,8 @@ Compute インスタンスを単一構成で配置する。
 ```mermaid
 graph TD
     subgraph Local["作業端末 (WSL)"]
-        TF["terraform<br/>(scripts/plan_tf.sh)"]
-        AN["ansible-playbook<br/>(scripts/run_ansible.sh)"]
+        TF["terraform"]
+        AN["ansible-playbook"]
     end
 
     TFC["Terraform Cloud<br/>(リモートバックエンド)"]
@@ -81,19 +81,19 @@ graph TD
 | シークレット管理 | OCI Vault（`oci_kms_vault`/`oci_kms_key`/`oci_vault_secret`、Terraform管理） | DEFAULT Vault / SOFTWARE鍵 |
 | シークレット同期 | External Secrets Operator | v2.9.0 |
 
-Terraform の state は Terraform Cloud の Workspace `infra-oci-terraform` で管理する
-（CLI-driven workflow）。設定手順は [TERRAFORM_CLOUD_SETUP.md](../../TERRAFORM_CLOUD_SETUP.md) を参照する。
+Terraform の state は Terraform Cloud の Workspace で管理する（CLI-driven workflow）。
+設定手順は [Terraform Cloud セットアップ](../04.build/01_TerraformCloudセットアップ.md) を参照する。
 
 ## 3. 機能設計
 
-[要件定義書 4章](../01.要件定義/要件定義書.md#4-機能要件)の各機能を、以下の方式で実現する。
+[要件定義書 4章](../01.requirements/REQUIREMENTS.md#4-機能要件)の各機能を、以下の方式で実現する。
 
 | 要件 | 実現方式 |
 | ---- | -------- |
 | インフラのプロビジョニング | `terraform/` の各 `.tf` で OCI リソースを定義し、cloud-init（`terraform/cloud-init.yaml`）で初期設定を行う |
-| OS 全般設定 | Ansible Role `os`（[OS設計書](OS設計書.md)） |
-| Kubernetes 環境構築 | Ansible Role `kubernetes`（[Kubernetes設計書](Kubernetes設計書.md)） |
-| データベース管理 | Ansible Role `mysql`（[MySQL設計書](MySQL設計書.md)） |
+| OS 全般設定 | Ansible Role `os`（[OS詳細設計書](../03.detailed-design/OS詳細設計書.md)） |
+| Kubernetes 環境構築 | Ansible Role `kubernetes`（[Kubernetes詳細設計書](../03.detailed-design/Kubernetes詳細設計書.md)） |
+| データベース管理 | Ansible Role `mysql`（[MySQL詳細設計書](../03.detailed-design/MySQL詳細設計書.md)） |
 
 `ansible/site.yml` は `os` → `kubernetes` → `mysql` の順に Role を適用する。
 Role 単位で適用する場合は同名のタグ（`--tags os` 等）を使用する。
@@ -123,7 +123,7 @@ Role 単位で適用する場合は同名のタグ（`--tags os` 等）を使用
 ### 4.1. 共通方針
 
 MySQL をホスト OS へ直接インストールし、サービスごとにスキーマを分離する。
-文字コード・照合順序・接続制限などの詳細は [MySQL設計書](MySQL設計書.md) を参照する。
+文字コード・照合順序・接続制限などの詳細は [MySQL詳細設計書](../03.detailed-design/MySQL詳細設計書.md) を参照する。
 
 ### 4.2. テーブル定義
 
@@ -145,15 +145,15 @@ MySQL をホスト OS へ直接インストールし、サービスごとにス�
 
 ## 7. 非機能要件の実現方式
 
-[要件定義書 6章](../01.要件定義/要件定義書.md#6-非機能要件)に対応する実現方式を示す。
+[要件定義書 6章](../01.requirements/REQUIREMENTS.md#6-非機能要件)に対応する実現方式を示す。
 
 | 要件 | 実現方式 |
 | ---- | -------- |
 | 可用性 | 単一インスタンス構成。障害時は Terraform / Ansible で再構築して復旧する |
 | 性能 | `VM.Standard.A1.Flex`（4 OCPU / 24 GB RAM）を割り当てる |
-| セキュリティ | ネットワークアクセス制御は OCI セキュリティ・リストで一元管理し、OS レイヤーのパケットフィルタは使用しない（[OS設計書 4.2節](OS設計書.md#42-os内ファイアウォール)）。SSH は公開鍵認証のみ（[OS設計書](OS設計書.md) 6章）。データベース接続情報は OCI Vault を真実源とし、External Secrets Operator 経由で Kubernetes Secret へ同期する（[MySQL設計書 4.1節](MySQL設計書.md#41-権限モデル管理者権限--運用権限)） |
+| セキュリティ | ネットワークアクセス制御は OCI セキュリティ・リストで一元管理し、OS レイヤーのパケットフィルタは使用しない（[OS詳細設計書 4.2節](../03.detailed-design/OS詳細設計書.md#42-os内ファイアウォール)）。SSH は公開鍵認証のみ（[OS詳細設計書](../03.detailed-design/OS詳細設計書.md) 6章）。データベース接続情報は OCI Vault を真実源とし、External Secrets Operator 経由で Kubernetes Secret へ同期する（[MySQL詳細設計書 4.1節](../03.detailed-design/MySQL詳細設計書.md#41-権限モデル管理者権限--運用権限)） |
 | バックアップ・リストア | 構成情報は本リポジトリのコードを正とし、環境の再構築でリストアする |
-| 運用・保守 | Terraform / Ansible によるコード管理。サーバ作業の証跡は `docs/04.保守・運用/` に記録する |
+| 運用・保守 | Terraform / Ansible によるコード管理。サーバ作業の実行コマンドと出力は証跡として記録し、Git 管理の対象外とする |
 | コスト | Always Free 枠の範囲内でリソースを構成する |
 | 移植性・保守性 | Ansible を Role 単位に分割し、レイヤーごとに独立して適用できる構成とする |
 

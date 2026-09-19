@@ -1,4 +1,4 @@
-# Kubernetes設計書 - OCI 個人開発基盤
+# Kubernetes詳細設計書
 
 ## 1. 概要
 
@@ -199,22 +199,3 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 - **リソース確認**: `kubectl get all -A`
 - **HPA確認**: `kubectl get hpa`
 - **ExternalSecret確認**: `kubectl get externalsecrets`
-
-## 6. Ansible 実装ガイド (変更なし)
-
-### 6.1. 変数構造案 (`vars/main.yml`)
-
-```yaml
-k8s_version: "1.30"
-pod_network_cidr: "10.244.0.0/16"
-k8s_master_ip: "10.0.0.10"
-install_ingress_nginx: true
-```
-
-### 6.2. Role 構成案
-
-1. **runtime**: `containerd` の導入とカーネルパラメータ (`br_netfilter` 等) の設定。
-2. **kube-tools**: `kubeadm`, `kubelet`, `kubectl` の導入とホールド設定。
-3. **init**: `kubeadm init` によるクラスター初期化と `kubeconfig` の配置。
-4. **network**: CNI (Calico等) の適用。
-5. **post-config**: Taint 解除、StorageClass の導入、Ingress Controller のセットアップ。

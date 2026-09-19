@@ -1,4 +1,4 @@
-# 01 構築手順書 - SSH 接続手順
+# 02 構築手順書 - SSH 接続手順
 
 ## 目次
 
@@ -12,7 +12,7 @@
 ## 1. 概要
 
 Terraform で構築した Compute インスタンスへ、許可された IP から直接 SSH 接続（TCP 22 ポート）する手順。
-接続構成は [基本設計書 3.1節](../02.設計/基本設計書.md#31-ネットワーク-vcn) を参照する。
+接続構成は [基本設計書 3.1節](../02.design/DESIGN.md#31-ネットワーク-vcn) を参照する。
 
 ## 2. 前提条件
 
@@ -25,7 +25,7 @@ Terraform で構築した Compute インスタンスへ、許可された IP か
 ### 3.1. 接続スクリプトによる接続
 
 ```bash
-./scripts/ssh_connect.sh
+~/.claude/scripts/tf_ssh_connect.sh
 ```
 
 - `terraform output` からインスタンスのパブリック IP と接続ユーザーを取得し、SSH 接続を開始する
@@ -33,7 +33,7 @@ Terraform で構築した Compute インスタンスへ、許可された IP か
 デフォルトの秘密鍵（`~/.ssh/id_rsa`）以外を使用する場合は `-i` で指定する。
 
 ```bash
-./scripts/ssh_connect.sh -i ~/.ssh/my_oci_key
+~/.claude/scripts/tf_ssh_connect.sh -i ~/.ssh/my_oci_key
 ```
 
 - `-i` で SSH 秘密鍵のパスを指定して接続する
