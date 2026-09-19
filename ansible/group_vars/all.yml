@@ -1,7 +1,11 @@
+# OCI Portfolio Infrastructure Common Variables
+
+# System settings
 system_hostname: "oci-portfolio"
 system_timezone: "Asia/Tokyo"
 system_locale: "ja_JP.UTF-8"
 
+# System limits
 sysctl_parameters:
   - { name: "net.ipv4.conf.all.accept_redirects", value: 0 }
   - { name: "net.ipv4.conf.all.send_redirects", value: 0 }
@@ -12,10 +16,12 @@ sysctl_parameters:
   - { name: "fs.nr_open", value: 1048576 }
   - { name: "vm.max_map_count", value: 262144 }
 
+# Kubernetes settings
 k8s_version: "1.30"
 pod_network_cidr: "10.244.0.0/16"
 cert_manager_email: "aibdlnew1.work@gmail.com"
 
+# MySQL settings
 mysql_databases:
   - name: "arumono_recipe"
     encoding: "utf8mb4"
@@ -30,8 +36,10 @@ mysql_users:
     priv: "*.*:ALL"
     host: "localhost"
 
+# External Secrets Operator settings
 eso_version: "v2.9.0"
 eso_cluster_secret_store_name: "oci-vault"
 
-# oci_vault_id / oci_region / oci_compartment_ocid は terraform output から -e で渡される
+# OCI Vault settings (oci_vault_id / oci_region / oci_compartment_ocid は
+# terraform output から scripts/run_ansible.sh 経由で -e として渡される)
 

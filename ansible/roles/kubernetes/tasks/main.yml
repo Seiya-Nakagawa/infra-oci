@@ -1,5 +1,9 @@
 ---
+# Kubernetes Setup and Configuration Tasks
 
+
+
+# 2. Container Runtime (containerd)
 - name: Install containerd
   apt:
     name: containerd
@@ -23,6 +27,7 @@
     state: restarted
     enabled: yes
 
+# 3. Kubernetes Repository and Components Installation
 - name: Create apt keyrings directory
   file:
     path: /etc/apt/keyrings
@@ -75,6 +80,7 @@
     enabled: yes
   when: not ansible_check_mode
 
+# 4. Initialize Kubernetes Cluster
 - name: Check if Kubernetes is already initialized
   stat:
     path: /etc/kubernetes/admin.conf
@@ -93,6 +99,7 @@
   when: not k8s_init_check.stat.exists
   changed_when: true
 
+# 5. Configure Kubeconfig for user seiya
 - name: Create .kube directory for seiya
   file:
     path: /home/seiya/.kube
@@ -111,17 +118,20 @@
     remote_src: yes
   when: not ansible_check_mode
 
+# 6. Deploy Add-ons
 - name: Wait for API Server to become healthy
   pause:
     seconds: 15
   when: not k8s_init_check.stat.exists
 
+# CNI (Flannel)
 - name: Deploy Flannel network plugin
   become_user: seiya
   command: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
   register: flannel_deploy
   changed_when: "'created' in flannel_deploy.stdout or 'configured' in flannel_deploy.stdout"
 
+# Untaint Master Node (Allow pods on Control Plane)
 - name: Remove master/control-plane NoSchedule taint
   become_user: seiya
   command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
@@ -129,6 +139,7 @@
   changed_when: "'untainted' in taint_remove.stdout"
   failed_when: false # Ignore if already untainted
 
+# Local Path Storage (StorageClass)
 - name: Deploy Rancher Local Path Storage Provisioner
   become_user: seiya
   command: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
@@ -142,6 +153,7 @@
   register: sc_default
   changed_when: "'patched' in sc_default.stdout"
 
+# Ingress Controller (ingress-nginx)
 - name: Download ingress-nginx baremetal deployment manifest
   get_url:
     url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
@@ -161,12 +173,14 @@
   register: ingress_nginx_deploy
   changed_when: "'created' in ingress_nginx_deploy.stdout or 'configured' in ingress_nginx_deploy.stdout"
 
+# cert-manager
 - name: Deploy cert-manager
   become_user: seiya
   command: kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
   register: cert_manager_deploy
   changed_when: "'created' in cert_manager_deploy.stdout or 'configured' in cert_manager_deploy.stdout"
 
+# Metrics Server
 - name: Download Metrics Server manifest
   get_url:
     url: https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
@@ -186,6 +200,7 @@
   register: metrics_deploy
   changed_when: "'created' in metrics_deploy.stdout or 'configured' in metrics_deploy.stdout"
 
+# cert-manager ClusterIssuer
 - name: Generate cert-manager ClusterIssuer manifest
   template:
     src: cluster_issuer.yaml.j2
@@ -200,6 +215,9 @@
   changed_when: "'created' in cluster_issuer_deploy.stdout or 'configured' in cluster_issuer_deploy.stdout"
   when: not ansible_check_mode
 
+# External Secrets Operator
+# 個人開発プロジェクト間で共有するDBパスワード等を、各プロジェクトの.envへ平文で
+# 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する。
 # CRD（clustersecretstores/secretstores）のOpenAPIスキーマが大きく、通常の
 # client-side apply が付与する last-applied-configuration アノテーションが
 # Kubernetesのアノテーション上限（262144バイト）を超えるため、--server-side を使う。

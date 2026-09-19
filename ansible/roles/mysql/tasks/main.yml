@@ -1,4 +1,5 @@
 ---
+# MySQL Setup and Configuration Tasks
 
 - name: Install MySQL packages and python3-pymysql
   apt:
@@ -50,6 +51,7 @@
     state: restarted
   when: not ansible_check_mode and mysql_config.changed
 
+# Security Hardening (Equivalent to mysql_secure_installation)
 - name: Remove anonymous MySQL users
   mysql_user:
     name: ""
@@ -76,6 +78,7 @@
     login_unix_socket: /var/run/mysqld/mysqld.sock
   when: not ansible_check_mode
 
+# Database and App User Setup
 - name: Create application databases
   mysql_db:
     name: "{{ item.name }}"
@@ -86,6 +89,9 @@
   loop: "{{ mysql_databases }}"
   when: not ansible_check_mode
 
+# app-dbuser等のパスワードはOCI Vault（Secrets Management）を真実源として一元管理し、
+# 各プロジェクトの.envへ平文で書き写す運用は行わない。
+# Ansibleはユーザープリンシパル（ローカルのOCI CLI設定）でSecretを取得する。
 - name: Fetch application user passwords from OCI Vault
   ansible.builtin.command:
     cmd: >
@@ -109,10 +115,16 @@
   no_log: true
   when: not ansible_check_mode
 
-# update_password: on_create を指定しないと、実行のたびに既存ユーザーのパスワードが
-# OCI Vaultの値で上書きされ、DB側で運用中のパスワードと乖離した場合に接続断を起こす。
-# password と plugin を同時に指定すると plugin 指定が無視され mysql_native_password で
-# 作成されるため、password ではなく plugin_auth_string を使う。
+# update_password: on_create を指定しない場合、実行のたびに既存ユーザーの
+# パスワードがOCI Vaultの値で上書きされ、実際にDB側で運用中のパスワードと
+# 乖離した場合に本番DB接続断を引き起こす。
+#
+# community.mysql.mysql_user は password（平文）と plugin を同時に指定すると、
+# ユーザー新規作成時に password 側の分岐が優先され plugin 指定を無視して
+# mysql_native_password で作成してしまう（community.mysql 3.8.0で確認、
+# plugins/module_utils/user.py の user_add() が password 指定時に
+# plugin 分岐へ到達しないため）。plugin を確実に反映させるには、
+# password ではなく plugin_auth_string（IDENTIFIED WITH plugin BY ...）を使う。
 - name: Create application users and grant privileges
   mysql_user:
     name: "{{ item.name }}"
@@ -127,6 +139,7 @@
   no_log: true
   when: not ansible_check_mode
 
+# seiya_db は個人名を含むため app-dbuser へ改名した。
 - name: Remove legacy seiya_db user (renamed to app-dbuser)
   mysql_user:
     name: seiya_db
@@ -135,6 +148,7 @@
     login_unix_socket: /var/run/mysqld/mysqld.sock
   when: not ansible_check_mode
 
+# 改名作業中の過渡的な名称として shared_app を一時的に作成したため削除する。
 - name: Remove transitional shared_app user (renamed to app-dbuser)
   mysql_user:
     name: shared_app
