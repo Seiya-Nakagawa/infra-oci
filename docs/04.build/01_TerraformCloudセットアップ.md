@@ -17,7 +17,8 @@
 
 Terraform Cloud をリモートバックエンドとし、ローカルから `terraform` コマンドを実行して OCI 上に
 インフラを構築する CLI-driven workflow のセットアップ手順。Terraform Cloud の位置づけは
-[基本設計書 1.1節](../02.design/DESIGN.md#11-前提インフラ) を参照する。
+[基本設計書 8.3節](../02.design/08.platform-control/8章_基本設計書_基盤制御.md#83-インフラ層の実行方式terraform)
+を参照する。
 
 ## 2. 前提条件
 

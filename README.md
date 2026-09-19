@@ -18,7 +18,7 @@ OS・ミドルウェアを構成する 2 段構成になっています。
 ## 📋 ドキュメント
 
 * **[要件定義書](docs/01.requirements/REQUIREMENTS.md)**: システムの目的、管理対象範囲、機能要件・非機能要件
-* **[基本設計書](docs/02.design/DESIGN.md)**: システム構成、リソース設計、技術スタック
+* **[基本設計書](docs/02.design/01.system-architecture/1章_基本設計書_システム構成.md)**: 分野ごとの章に分割。1章にシステム構成・技術スタックと全章の一覧を記載
 * **[OS詳細設計書](docs/03.detailed-design/OS詳細設計書.md)** / **[Kubernetes詳細設計書](docs/03.detailed-design/Kubernetes詳細設計書.md)** / **[MySQL詳細設計書](docs/03.detailed-design/MySQL詳細設計書.md)**: 各レイヤーの詳細設計
 * **[Terraform Cloud セットアップ](docs/04.build/01_TerraformCloudセットアップ.md)**: Workspace の設定手順
 * **[SSH接続手順](docs/04.build/02_SSH接続手順.md)**: パブリックIPを経由した直接 SSH 接続手順
