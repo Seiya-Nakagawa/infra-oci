@@ -73,6 +73,11 @@ Ansible はサーバ設定時に OCI CLI（ユーザープリンシパル）経�
 反映し、Kubernetes 上で稼働する各プロジェクトは External Secrets Operator の
 ClusterSecretStore（Instance Principal）経由で Kubernetes Secret へ同期する。
 `.env` への平文の書き写しは行わない。
+
+パスワードを変更する場合は、MySQL 側（`ALTER USER`）を先に変更し、成功を確認してから
+OCI Vault に新しい Secret バージョンを登録する。この順序により、Vault の値が
+MySQL の実態と乖離した状態を作らない。Vault の Secret は Terraform で初回作成のみを行い、
+以降の値の更新は Terraform の管理外とする。
 管理者権限（`root`）の認証情報は本リポジトリのいかなる場所にも保存しない。
 
 ## 5. 確認コマンド
