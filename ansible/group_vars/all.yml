@@ -36,6 +36,17 @@ mysql_users:
     priv: "*.*:ALL"
     host: "localhost"
 
+# 全サービス共有のNamespace・Ingress・TLS証明書
+# ホスト名・パスの割り当ては docs/02.design/99.appendix/ホスト名・パス割り当て台帳.md と揃える。
+# 1つのIngressで全ルートを扱うため、パスは「/{path_prefix}」でマッチし、
+# プレフィックスを除去してバックエンドへ転送する。
+shared_namespace: "app-prod"
+shared_ingress_name: "shared-ingress"
+shared_ingress_host: "technohonesty.com"
+shared_tls_secret_name: "technohonesty-com-tls"
+shared_ingress_routes:
+  - { path_prefix: "kakeibo", service_name: "kakeibo-web", service_port: 80 }
+
 # External Secrets Operator settings
 eso_version: "v2.9.0"
 eso_cluster_secret_store_name: "oci-vault"
