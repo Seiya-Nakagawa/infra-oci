@@ -341,6 +341,13 @@
       kubernetes.core.k8s:
         state: present
         definition: "{{ lookup('ansible.builtin.url', 'https://github.com/external-secrets/external-secrets/releases/download/' ~ eso_version ~ '/external-secrets.yaml', split_lines=False) | from_yaml_all | select | list }}"
+      register: eso_deploy
+      # externalsecrets CRD は内容が同一でも、モジュールが毎回更新（generation の加算）を返す。
+      # 実体が変わらないため、この CRD の結果は変更判定から除外する。
+      changed_when: >-
+        eso_deploy.result.results | default([]) | selectattr('changed')
+        | rejectattr('result.metadata.name', 'in', ['externalsecrets.external-secrets.io'])
+        | list | length > 0
 
     - name: Wait for External Secrets Operator webhook to become ready
       kubernetes.core.k8s_info:
