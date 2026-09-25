@@ -10,7 +10,7 @@ resource "oci_identity_policy" "db_backup" {
   description    = "DBバックアップ用にバケットへの書き込みと通知の発行のみを許可する"
   statements = [
     "allow dynamic-group ${oci_identity_dynamic_group.eso.name} to manage objects in compartment id ${var.compartment_ocid} where target.bucket.name = '${local.backup_bucket_name}'",
-    "allow dynamic-group ${oci_identity_dynamic_group.eso.name} to use ons-topics in compartment id ${var.compartment_ocid} where all {target.topic.id = '${oci_ons_notification_topic.backup_failure.id}', request.permission = 'ONS_TOPIC_PUBLISH'}",
+    "allow dynamic-group ${oci_identity_dynamic_group.eso.name} to use ons-topics in compartment id ${var.compartment_ocid} where request.permission = 'ONS_TOPIC_PUBLISH'",
   ]
 }
 
