@@ -215,6 +215,23 @@
   changed_when: "'created' in cluster_issuer_deploy.stdout or 'configured' in cluster_issuer_deploy.stdout"
   when: not ansible_check_mode
 
+# 共有Namespace・Certificate・Ingress
+# 全サービスが共有する外部公開の入口。サービスの追加・削除時は shared_ingress_routes を更新して再適用する。
+# Certificate の検証（HTTP-01）は cert-manager の Webhook が起動してから通るため、ClusterIssuer の後に適用する。
+- name: Generate shared Namespace, Certificate and Ingress manifest
+  template:
+    src: shared_ingress.yaml.j2
+    dest: /tmp/shared_ingress.yaml
+    mode: '0644'
+  when: not ansible_check_mode
+
+- name: Deploy shared Namespace, Certificate and Ingress
+  become_user: seiya
+  command: kubectl apply -f /tmp/shared_ingress.yaml
+  register: shared_ingress_deploy
+  changed_when: "'created' in shared_ingress_deploy.stdout or 'configured' in shared_ingress_deploy.stdout"
+  when: not ansible_check_mode
+
 # External Secrets Operator
 # 個人開発プロジェクト間で共有するDBパスワード等を、各プロジェクトの.envへ平文で
 # 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する。
