@@ -149,3 +149,8 @@ variable "domain_name" {
   type        = string
   default     = ""
 }
+
+variable "notification_email" {
+  description = "DBバックアップ失敗の通知先メールアドレス"
+  type        = string
+}

@@ -11,7 +11,7 @@
 | ディレクトリ | 責務 |
 | ---- | ---- |
 | `terraform/` | OCI インフラ定義（VCN・サブネット・Compute・Vault 等）。state は Terraform Cloud（CLI-driven workflow）で管理する |
-| `ansible/` | Compute インスタンスの構成管理。`site.yml` が `os` → `kubernetes` → `mysql` の順に 3 つのロールを適用する |
+| `ansible/` | Compute インスタンスの構成管理。`site.yml` が `os` → `kubernetes` → `mysql` → `backup` の順に 4 つのロールを適用する |
 | `scripts/` | このリポジトリ固有のスクリプト（`run_ansible.sh`） |
 | `docs/` | 要件定義書・基本設計書・詳細設計書・構築手順書 |
 

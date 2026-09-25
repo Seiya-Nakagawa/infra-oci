@@ -1,0 +1,9 @@
+[Unit]
+Description=MySQL databases dump to OCI Object Storage
+After=mysql.service
+Wants=mysql.service
+OnFailure=mysql-backup-notify.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mysql-backup.sh

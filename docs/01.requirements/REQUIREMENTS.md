@@ -53,7 +53,7 @@ SSH 鍵登録）に留め、ミドルウェアやアプリケーションの詳�
 | OCI | Oracle Cloud Infrastructure |
 | Always Free | OCI が提供する無期限無料利用枠 |
 | VCN | Virtual Cloud Network。OCI 上の仮想ネットワーク |
-| Role | Ansible における構成管理単位。本プロジェクトでは `os` / `kubernetes` / `mysql` の 3 つ |
+| Role | Ansible における構成管理単位。本プロジェクトでは `os` / `kubernetes` / `mysql` / `backup` の 4 つ |
 
 ## 4. 機能要件
 

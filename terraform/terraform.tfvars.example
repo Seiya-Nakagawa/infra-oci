@@ -48,3 +48,6 @@ compartment_ocid = "ocid1.compartment.oc1..aaaaaaaa..."
 
 # (オプション) 環境名
 # environment = "production"
+
+# DBバックアップ失敗の通知先メールアドレス
+notification_email = "you@example.com"

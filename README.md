@@ -73,7 +73,7 @@ terraform output
 
 ## 🔧 Ansible（サーバの構成管理）
 
-`ansible/site.yml` は `os` → `kubernetes` → `mysql` の順に 3 つのロールを適用します。
+`ansible/site.yml` は `os` → `kubernetes` → `mysql` → `backup` の順に 4 つのロールを適用します。
 
 ```bash
 # ドライラン（影響範囲の確認）

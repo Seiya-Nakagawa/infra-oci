@@ -53,6 +53,9 @@ OS_USERNAME=$(echo "$TF_OUTPUT" | jq -r '.instance_user.value // "seiya"')
 OCI_VAULT_ID=$(echo "$TF_OUTPUT" | jq -r '.oci_vault_id.value // empty')
 OCI_REGION=$(echo "$TF_OUTPUT" | jq -r '.oci_region.value // empty')
 OCI_COMPARTMENT_OCID=$(echo "$TF_OUTPUT" | jq -r '.oci_compartment_ocid.value // empty')
+BACKUP_BUCKET_NAME=$(echo "$TF_OUTPUT" | jq -r '.backup_bucket_name.value // empty')
+BACKUP_NAMESPACE=$(echo "$TF_OUTPUT" | jq -r '.objectstorage_namespace.value // empty')
+BACKUP_TOPIC_ID=$(echo "$TF_OUTPUT" | jq -r '.backup_topic_id.value // empty')
 
 if [ -z "$INSTANCE_IP" ]; then
     echo "Error: terraform output からパブリックIPアドレス (instance_public_ip) が取得できませんでした。"
@@ -72,4 +75,7 @@ ansible-playbook -i hosts.yml site.yml \
     -e "oci_vault_id=$OCI_VAULT_ID" \
     -e "oci_region=$OCI_REGION" \
     -e "oci_compartment_ocid=$OCI_COMPARTMENT_OCID" \
+    -e "backup_bucket_name=$BACKUP_BUCKET_NAME" \
+    -e "backup_namespace=$BACKUP_NAMESPACE" \
+    -e "backup_topic_id=$BACKUP_TOPIC_ID" \
     "$@"

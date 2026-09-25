@@ -76,3 +76,21 @@ output "oci_region" {
   description = "OCI region where the vault is provisioned"
   value       = var.region
 }
+
+# DBバックアップの保管先バケット名
+output "backup_bucket_name" {
+  description = "Object Storage bucket name for DB dumps"
+  value       = oci_objectstorage_bucket.db_backup.name
+}
+
+# Object Storage ネームスペース
+output "objectstorage_namespace" {
+  description = "Object Storage namespace of the tenancy"
+  value       = data.oci_objectstorage_namespace.main.namespace
+}
+
+# バックアップ失敗通知トピックのOCID
+output "backup_topic_id" {
+  description = "OCID of the notification topic for backup failures"
+  value       = oci_ons_notification_topic.backup_failure.id
+}

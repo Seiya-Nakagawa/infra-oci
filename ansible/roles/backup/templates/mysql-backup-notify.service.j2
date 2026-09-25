@@ -1,0 +1,6 @@
+[Unit]
+Description=Notify MySQL backup failure
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mysql-backup-notify.sh

@@ -64,3 +64,26 @@ resource "oci_identity_policy" "eso_vault_read" {
     "allow dynamic-group ${oci_identity_dynamic_group.eso.name} to read secret-family in compartment id ${var.compartment_ocid}"
   ]
 }
+
+# DBバックアップ用の読み取り専用ユーザー backup-dbuser のパスワード。
+# 値は初回作成時のみ Terraform が設定する（app-dbuser-password と同じ扱い）。
+resource "random_password" "backup_db_password" {
+  length  = 32
+  special = false
+}
+
+resource "oci_vault_secret" "backup_db_password" {
+  compartment_id = var.compartment_ocid
+  vault_id       = oci_kms_vault.secrets.id
+  key_id         = oci_kms_key.app_db_password_key.id
+  secret_name    = "backup-dbuser-password"
+
+  secret_content {
+    content_type = "BASE64"
+    content      = base64encode(random_password.backup_db_password.result)
+  }
+
+  lifecycle {
+    ignore_changes = [secret_content]
+  }
+}
