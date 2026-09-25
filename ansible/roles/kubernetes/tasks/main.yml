@@ -120,14 +120,19 @@
 
 # 6. Deploy Add-ons
 - name: Wait for API Server to become healthy
-  pause:
-    seconds: 15
-  when: not k8s_init_check.stat.exists
+  become_user: seiya
+  command: kubectl get --raw /readyz
+  register: apiserver_ready
+  until: apiserver_ready.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+  when: not k8s_init_check.stat.exists and not ansible_check_mode
 
 # CNI (Flannel)
 - name: Deploy Flannel network plugin
   become_user: seiya
-  command: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+  command: kubectl apply -f https://github.com/flannel-io/flannel/releases/download/{{ flannel_version }}/kube-flannel.yml
   register: flannel_deploy
   changed_when: "'created' in flannel_deploy.stdout or 'configured' in flannel_deploy.stdout"
 
@@ -142,7 +147,7 @@
 # Local Path Storage (StorageClass)
 - name: Deploy Rancher Local Path Storage Provisioner
   become_user: seiya
-  command: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_provisioner_version }}/deploy/local-path-storage.yaml
   register: storage_deploy
   changed_when: "'created' in storage_deploy.stdout or 'configured' in storage_deploy.stdout"
 
@@ -183,7 +188,7 @@
 # Metrics Server
 - name: Download Metrics Server manifest
   get_url:
-    url: https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    url: https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
     dest: /tmp/metrics_server_deploy.yaml
     mode: '0644'
 
