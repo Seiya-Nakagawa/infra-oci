@@ -20,11 +20,16 @@
     src: containerd_config.toml.j2
     dest: /etc/containerd/config.toml
     mode: '0644'
+  notify: Restart containerd
 
-- name: Restart and enable containerd service
+# 設定変更があった場合のみ再起動する。kubeadm init より前に設定を反映させるため、ここで実行する。
+- name: Flush handlers to apply containerd config
+  meta: flush_handlers
+
+- name: Enable and start containerd service
   service:
     name: containerd
-    state: restarted
+    state: started
     enabled: yes
 
 # 3. Kubernetes Repository and Components Installation
