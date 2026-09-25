@@ -38,6 +38,12 @@ resource "oci_vault_secret" "app_db_password" {
     content_type = "BASE64"
     content      = base64encode(random_password.app_db_password.result)
   }
+
+  # 値は初回作成時のみ Terraform が設定する。以降は MySQL の実パスワードに合わせて
+  # 新バージョンを登録するため、Terraform がランダム値へ巻き戻さないようにする
+  lifecycle {
+    ignore_changes = [secret_content]
+  }
 }
 
 # External Secrets Operator (Kubernetes上) がInstance Principalで
