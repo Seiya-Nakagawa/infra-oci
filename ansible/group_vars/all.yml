@@ -18,6 +18,11 @@ sysctl_parameters:
 
 # Kubernetes settings
 k8s_version: "1.30"
+
+# Kubernetes アドオンのバージョン（マニフェスト URL の固定に使用）
+flannel_version: "v0.28.9"
+local_path_provisioner_version: "v0.0.37"
+metrics_server_version: "v0.9.0"
 pod_network_cidr: "10.244.0.0/16"
 cert_manager_email: "aibdlnew1.work@gmail.com"
 
