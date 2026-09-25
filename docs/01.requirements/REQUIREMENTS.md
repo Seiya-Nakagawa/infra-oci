@@ -33,12 +33,13 @@ SSH 鍵登録）に留め、ミドルウェアやアプリケーションの詳�
 - Compute インスタンスの構築
 - OS 設定（システム共通設定、パッケージ管理、ユーザー・権限管理、セキュリティ基盤）
 - Kubernetes 基盤（シングルノードクラスター、CNI、Ingress Controller、cert-manager）の構築
+- 全サービスが共有する Namespace、Ingress、TLS 証明書の管理
 - MySQL の導入・設定（ホスト OS 直接インストール）
 - 各サービスで共通して利用するライブラリ・ランタイムの導入
 
 ### 2.2. スコープ外
 
-- アプリケーションレイヤー（コンテナイメージ、Kubernetes マニフェスト等）。各アプリケーションのリポジトリで管理する
+- アプリケーションレイヤー（コンテナイメージ、Deployment・Service 等のワークロードのマニフェスト）。各アプリケーションのリポジトリで管理する
 - OCI テナンシ自体の管理（IAM ユーザー、コンパートメント設計等）
 
 ### 2.3. 現行機能との差分
@@ -76,6 +77,8 @@ SSH 鍵登録）に留め、ミドルウェアやアプリケーションの詳�
 - 必要なアドオン（CNI、Ingress Controller `ingress-nginx`、cert-manager）のセットアップ
 - Ingress Controller は外部から直接 HTTP/HTTPS（80/443）トラフィックを受信する構成とする
 - cert-manager の ClusterIssuer により Let's Encrypt の証明書を自動発行する
+- 全サービスは共有の Namespace に配置し、外部公開の Ingress と TLS 証明書は基盤で 1 つに集約して管理する
+- サービスの追加・削除時は、基盤側で Ingress のルーティングを更新する
 
 ### 4.4. データベース管理
 
