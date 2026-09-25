@@ -164,6 +164,8 @@
     url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
     dest: /tmp/ingress_nginx_deploy.yaml
     mode: '0644'
+    # 毎回取得し直す。既存ファイルへ replace を重ねると、書き換えが実行のたびに累積する
+    force: true
 
 - name: Modify ingress-nginx manifest to use HostNetwork
   replace:
@@ -191,6 +193,8 @@
     url: https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
     dest: /tmp/metrics_server_deploy.yaml
     mode: '0644'
+    # 毎回取得し直す。既存ファイルへ replace を重ねると、書き換えが実行のたびに累積する
+    force: true
 
 - name: Modify Metrics Server manifest to allow insecure TLS
   replace:
