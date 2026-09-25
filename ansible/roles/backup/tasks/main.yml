@@ -23,16 +23,16 @@
     group: root
 
 - name: Deploy backup script
-  template:
-    src: mysql-backup.sh.j2
+  copy:
+    src: mysql-backup.sh
     dest: /usr/local/sbin/mysql-backup.sh
     mode: '0750'
     owner: root
     group: root
 
 - name: Deploy backup failure notification script
-  template:
-    src: mysql-backup-notify.sh.j2
+  copy:
+    src: mysql-backup-notify.sh
     dest: /usr/local/sbin/mysql-backup-notify.sh
     mode: '0750'
     owner: root
