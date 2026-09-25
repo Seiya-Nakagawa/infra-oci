@@ -108,9 +108,9 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 
 #### 3.4.1. Kubernetes構成：Namespace
 
-- **方針**: 用途ごとにNamespaceを分離する。環境分離（dev/staging）は行わず、本番のみの構成とする。
+- **方針**: 全サービスのワークロードは共有Namespace（`app-prod`）に配置する。基盤コンポーネントは用途ごとに別Namespaceとする。環境分離（dev/staging）は行わず、本番のみの構成とする。
 - **構成例**:
-  - `default` または `app-prod`: 本番アプリケーション
+  - `app-prod`: 全サービスのワークロード、共有Ingress、共有TLS証明書
   - `ingress-nginx`: Ingress Controller
   - `monitoring`: 監視系（Metrics Server等）
 - **Pod readiness gate**: LBなしのシングルノード構成のため使用しない。標準の `readinessProbe` で代替する。
@@ -139,6 +139,8 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 - **公開方式**: `HostNetwork` (シングルノード環境でホストの 80/443 ポートを占有)
 - **外部アクセス**: OCIのセキュリティ・リストで 80/443 ポートを開放し、外部から Kubernetes Ingress Controller Pod に直接アクセスする（ホストOS上のNginxは使用しない）。
 - **SSL/TLS 終端**: Ingress Controller で SSL 終端を実施し、`cert-manager` による Let's Encrypt 証明書の自動管理を行う。
+- **Ingress リソース**: 共有Namespace（`app-prod`）に1つだけ作成し、全サービスのホスト名・パスのルーティングを集約する。Ansible の kubernetes ロールで適用する。サービスの追加・削除時はこのルーティングを更新する。
+- **TLS 証明書**: 共有Ingress用の Certificate を基盤側で1つ管理する。各サービスは Ingress・Certificate を作成しない。
 
 #### 3.4.7. Kubernetes構成：ConfigMap
 
