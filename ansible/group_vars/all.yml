@@ -40,6 +40,11 @@ mysql_users:
     oci_secret_name: "app-dbuser-password"
     priv: "*.*:ALL"
     host: "localhost"
+  # ダンプ専用の読み取りユーザー（全DBのダンプに必要な権限のみ）
+  - name: "backup-dbuser"
+    oci_secret_name: "backup-dbuser-password"
+    priv: "*.*:SELECT,SHOW VIEW,TRIGGER,EVENT"
+    host: "localhost"
 
 # 全サービス共有のNamespace・Ingress・TLS証明書
 # ホスト名・パスの割り当ては docs/02.design/99.appendix/ホスト名・パス割り当て台帳.md と揃える。
@@ -51,6 +56,16 @@ shared_ingress_host: "technohonesty.com"
 shared_tls_secret_name: "technohonesty-com-tls"
 shared_ingress_routes:
   - { path_prefix: "kakeibo", service_name: "kakeibo-web", service_port: 80 }
+
+# DB バックアップ settings
+# oci_cli_version はホスト上の OCI CLI（インスタンスプリンシパル用）のバージョン
+oci_cli_version: "3.94.0"
+backup_oci_venv: "/opt/oci-cli"
+backup_secret_name: "backup-dbuser-password"
+backup_db_user: "backup-dbuser"
+backup_time: "03:00:00"
+# backup_bucket_name / backup_namespace / backup_topic_id は terraform output から
+# scripts/run_ansible.sh 経由で -e として渡される
 
 # External Secrets Operator settings
 eso_version: "v2.9.0"

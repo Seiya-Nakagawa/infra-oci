@@ -1,0 +1,61 @@
+---
+# DB ダンプ（日次）を Object Storage へ退避するバックアップ機構
+
+- name: Install python3-venv for OCI CLI
+  apt:
+    name: python3-venv
+    state: present
+
+# ホスト上のスクリプトは、ユーザープリンシパルではなくインスタンスプリンシパルで動作させる
+- name: Install OCI CLI into a dedicated virtualenv
+  pip:
+    name: "oci-cli=={{ oci_cli_version }}"
+    virtualenv: "{{ backup_oci_venv }}"
+    virtualenv_command: python3 -m venv
+  when: not ansible_check_mode
+
+- name: Deploy backup settings
+  template:
+    src: mysql-backup.env.j2
+    dest: /etc/mysql-backup.env
+    mode: '0640'
+    owner: root
+    group: root
+
+- name: Deploy backup script
+  copy:
+    src: mysql-backup.sh
+    dest: /usr/local/sbin/mysql-backup.sh
+    mode: '0750'
+    owner: root
+    group: root
+
+- name: Deploy backup failure notification script
+  copy:
+    src: mysql-backup-notify.sh
+    dest: /usr/local/sbin/mysql-backup-notify.sh
+    mode: '0750'
+    owner: root
+    group: root
+
+- name: Deploy backup systemd units
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: '0644'
+  loop:
+    - mysql-backup.service
+    - mysql-backup-notify.service
+    - mysql-backup.timer
+  register: backup_units
+
+- name: Reload systemd daemon if units changed
+  command: systemctl daemon-reload
+  when: backup_units.changed and not ansible_check_mode
+
+- name: Enable and start backup timer
+  service:
+    name: mysql-backup.timer
+    state: started
+    enabled: yes
+  when: not ansible_check_mode

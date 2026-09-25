@@ -12,3 +12,8 @@ data "oci_core_images" "ubuntu_arm64" {
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
 }
+
+# データソース: Object Storage ネームスペース
+data "oci_objectstorage_namespace" "main" {
+  compartment_id = var.compartment_ocid
+}
