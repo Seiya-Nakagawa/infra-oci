@@ -119,6 +119,20 @@
   when: not ansible_check_mode
 
 # 6. Deploy Add-ons
+# kubernetes.core.k8s モジュールで適用する。冪等性はモジュールが実クラスタとの差分で判定するため、
+# kubectl の標準出力の文字列一致による changed_when は使わない。
+# モジュールは対象ホスト上で python3-kubernetes を使って動作する。
+- name: Install python3-kubernetes for kubernetes.core modules
+  apt:
+    name: python3-kubernetes
+    state: present
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Check if kubeconfig exists for seiya
+  stat:
+    path: /home/seiya/.kube/config
+  register: kubeconfig_check
+
 - name: Wait for API Server to become healthy
   become_user: seiya
   command: kubectl get --raw /readyz
@@ -129,150 +143,214 @@
   changed_when: false
   when: not k8s_init_check.stat.exists and not ansible_check_mode
 
-# CNI (Flannel)
-- name: Deploy Flannel network plugin
+- name: Deploy add-ons
   become_user: seiya
-  command: kubectl apply -f https://github.com/flannel-io/flannel/releases/download/{{ flannel_version }}/kube-flannel.yml
-  register: flannel_deploy
-  changed_when: "'created' in flannel_deploy.stdout or 'configured' in flannel_deploy.stdout"
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: /home/seiya/.kube/config
+    kubernetes.core.k8s_info:
+      kubeconfig: /home/seiya/.kube/config
+    kubernetes.core.k8s_taint:
+      kubeconfig: /home/seiya/.kube/config
+  when: kubeconfig_check.stat.exists
+  block:
+    # CNI (Flannel)
+    - name: Deploy Flannel network plugin
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.url', 'https://github.com/flannel-io/flannel/releases/download/' ~ flannel_version ~ '/kube-flannel.yml', split_lines=False) | from_yaml_all | select | list }}"
 
-# Untaint Master Node (Allow pods on Control Plane)
-- name: Remove master/control-plane NoSchedule taint
-  become_user: seiya
-  command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-  register: taint_remove
-  changed_when: "'untainted' in taint_remove.stdout"
-  failed_when: false # Ignore if already untainted
+    # Untaint Master Node (Allow pods on Control Plane)
+    - name: Get cluster nodes
+      kubernetes.core.k8s_info:
+        kind: Node
+      register: cluster_nodes
 
-# Local Path Storage (StorageClass)
-- name: Deploy Rancher Local Path Storage Provisioner
-  become_user: seiya
-  command: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_provisioner_version }}/deploy/local-path-storage.yaml
-  register: storage_deploy
-  changed_when: "'created' in storage_deploy.stdout or 'configured' in storage_deploy.stdout"
+    - name: Remove master/control-plane NoSchedule taint
+      kubernetes.core.k8s_taint:
+        state: absent
+        name: "{{ item.metadata.name }}"
+        taints:
+          - key: node-role.kubernetes.io/control-plane
+            effect: NoSchedule
+      loop: "{{ cluster_nodes.resources }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
 
-- name: Set Local Path StorageClass as default
-  become_user: seiya
-  command: |
-    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-  register: sc_default
-  changed_when: "'patched' in sc_default.stdout"
+    # Local Path Storage (StorageClass)
+    - name: Deploy Rancher Local Path Storage Provisioner
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.url', 'https://raw.githubusercontent.com/rancher/local-path-provisioner/' ~ local_path_provisioner_version ~ '/deploy/local-path-storage.yaml', split_lines=False) | from_yaml_all | select | list }}"
 
-# Ingress Controller (ingress-nginx)
-- name: Download ingress-nginx baremetal deployment manifest
-  get_url:
-    url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
-    dest: /tmp/ingress_nginx_deploy.yaml
-    mode: '0644'
-    # 毎回取得し直す。既存ファイルへ replace を重ねると、書き換えが実行のたびに累積する
-    force: true
+    - name: Set Local Path StorageClass as default
+      kubernetes.core.k8s:
+        state: patched
+        kind: StorageClass
+        api_version: storage.k8s.io/v1
+        name: local-path
+        definition:
+          metadata:
+            annotations:
+              storageclass.kubernetes.io/is-default-class: "true"
 
-- name: Modify ingress-nginx manifest to use HostNetwork
-  replace:
-    path: /tmp/ingress_nginx_deploy.yaml
-    regexp: '(\s+dnsPolicy:\s+ClusterFirst)'
-    replace: '\1\n      hostNetwork: true\n      dnsPolicy: ClusterFirstWithHostNet'
-  when: not ansible_check_mode
+    # Ingress Controller (ingress-nginx)
+    # 上流マニフェストを kustomize のパッチで加工して描画する。描画は毎回上流から行うため、
+    # 加工が実行のたびに累積することはない。
+    - name: Create kustomize directory for ingress-nginx
+      become_user: root
+      file:
+        path: /tmp/kustomize/ingress-nginx
+        state: directory
+        owner: seiya
+        mode: '0755'
 
-- name: Deploy ingress-nginx Controller
-  become_user: seiya
-  command: kubectl apply -f /tmp/ingress_nginx_deploy.yaml
-  register: ingress_nginx_deploy
-  changed_when: "'created' in ingress_nginx_deploy.stdout or 'configured' in ingress_nginx_deploy.stdout"
+    - name: Generate kustomization for ingress-nginx (HostNetwork)
+      become_user: root
+      copy:
+        dest: /tmp/kustomize/ingress-nginx/kustomization.yaml
+        owner: seiya
+        mode: '0644'
+        content: |
+          resources:
+            - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-{{ ingress_nginx_version }}/deploy/static/provider/baremetal/deploy.yaml
+          patches:
+            - target:
+                kind: Deployment
+                name: ingress-nginx-controller
+              patch: |-
+                - op: add
+                  path: /spec/template/spec/hostNetwork
+                  value: true
+                - op: replace
+                  path: /spec/template/spec/dnsPolicy
+                  value: ClusterFirstWithHostNet
 
-# cert-manager
-- name: Deploy cert-manager
-  become_user: seiya
-  command: kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
-  register: cert_manager_deploy
-  changed_when: "'created' in cert_manager_deploy.stdout or 'configured' in cert_manager_deploy.stdout"
+    - name: Render ingress-nginx manifest
+      command: kubectl kustomize /tmp/kustomize/ingress-nginx
+      register: ingress_nginx_manifest
+      changed_when: false
+      check_mode: false
 
-# Metrics Server
-- name: Download Metrics Server manifest
-  get_url:
-    url: https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
-    dest: /tmp/metrics_server_deploy.yaml
-    mode: '0644'
-    # 毎回取得し直す。既存ファイルへ replace を重ねると、書き換えが実行のたびに累積する
-    force: true
+    - name: Deploy ingress-nginx Controller
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ ingress_nginx_manifest.stdout | from_yaml_all | select | list }}"
 
-- name: Modify Metrics Server manifest to allow insecure TLS
-  replace:
-    path: /tmp/metrics_server_deploy.yaml
-    regexp: '(\s+-\s+--secure-port=10250)'
-    replace: '\1\n        - --kubelet-insecure-tls'
-  when: not ansible_check_mode
+    # cert-manager
+    - name: Deploy cert-manager
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.url', 'https://github.com/cert-manager/cert-manager/releases/download/' ~ cert_manager_version ~ '/cert-manager.yaml', split_lines=False) | from_yaml_all | select | list }}"
 
-- name: Deploy Metrics Server
-  become_user: seiya
-  command: kubectl apply -f /tmp/metrics_server_deploy.yaml
-  register: metrics_deploy
-  changed_when: "'created' in metrics_deploy.stdout or 'configured' in metrics_deploy.stdout"
+    # Metrics Server
+    - name: Create kustomize directory for Metrics Server
+      become_user: root
+      file:
+        path: /tmp/kustomize/metrics-server
+        state: directory
+        owner: seiya
+        mode: '0755'
 
-# cert-manager ClusterIssuer
-- name: Generate cert-manager ClusterIssuer manifest
-  template:
-    src: cluster_issuer.yaml.j2
-    dest: /tmp/cluster_issuer.yaml
-    mode: '0644'
-  when: not ansible_check_mode
+    - name: Generate kustomization for Metrics Server (insecure kubelet TLS)
+      become_user: root
+      copy:
+        dest: /tmp/kustomize/metrics-server/kustomization.yaml
+        owner: seiya
+        mode: '0644'
+        content: |
+          resources:
+            - https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
+          patches:
+            - target:
+                kind: Deployment
+                name: metrics-server
+              patch: |-
+                - op: add
+                  path: /spec/template/spec/containers/0/args/-
+                  value: --kubelet-insecure-tls
 
-- name: Deploy cert-manager ClusterIssuer
-  become_user: seiya
-  command: kubectl apply -f /tmp/cluster_issuer.yaml
-  register: cluster_issuer_deploy
-  changed_when: "'created' in cluster_issuer_deploy.stdout or 'configured' in cluster_issuer_deploy.stdout"
-  when: not ansible_check_mode
+    - name: Render Metrics Server manifest
+      command: kubectl kustomize /tmp/kustomize/metrics-server
+      register: metrics_server_manifest
+      changed_when: false
+      check_mode: false
 
-# 共有Namespace・Certificate・Ingress
-# 全サービスが共有する外部公開の入口。サービスの追加・削除時は shared_ingress_routes を更新して再適用する。
-# Certificate の検証（HTTP-01）は cert-manager の Webhook が起動してから通るため、ClusterIssuer の後に適用する。
-- name: Generate shared Namespace, Certificate and Ingress manifest
-  template:
-    src: shared_ingress.yaml.j2
-    dest: /tmp/shared_ingress.yaml
-    mode: '0644'
-  when: not ansible_check_mode
+    - name: Deploy Metrics Server
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ metrics_server_manifest.stdout | from_yaml_all | select | list }}"
 
-- name: Deploy shared Namespace, Certificate and Ingress
-  become_user: seiya
-  command: kubectl apply -f /tmp/shared_ingress.yaml
-  register: shared_ingress_deploy
-  changed_when: "'created' in shared_ingress_deploy.stdout or 'configured' in shared_ingress_deploy.stdout"
-  when: not ansible_check_mode
+    # cert-manager ClusterIssuer
+    # Webhook が起動する前に適用すると検証で失敗するため、起動を待つ。
+    - name: Wait for cert-manager webhook to become ready
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: cert-manager
+        name: cert-manager-webhook
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 180
+      when: not ansible_check_mode
 
-# External Secrets Operator
-# 個人開発プロジェクト間で共有するDBパスワード等を、各プロジェクトの.envへ平文で
-# 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する。
-# CRD（clustersecretstores/secretstores）のOpenAPIスキーマが大きく、通常の
-# client-side apply が付与する last-applied-configuration アノテーションが
-# Kubernetesのアノテーション上限（262144バイト）を超えるため、--server-side を使う。
-- name: Deploy External Secrets Operator
-  become_user: seiya
-  command: >
-    kubectl apply --server-side --force-conflicts
-    -f https://github.com/external-secrets/external-secrets/releases/download/{{ eso_version }}/external-secrets.yaml
-  register: eso_deploy
-  changed_when: "'created' in eso_deploy.stdout or 'configured' in eso_deploy.stdout"
+    - name: Deploy cert-manager ClusterIssuer
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'cluster_issuer.yaml.j2') | from_yaml_all | select | list }}"
+      when: not ansible_check_mode
 
-# external-secrets.yaml は専用Namespaceを作成せず、kubectlの現在のコンテキスト
-# （このクラスタでは default）にリソースを展開する。
-- name: Wait for External Secrets Operator webhook to become ready
-  become_user: seiya
-  command: kubectl wait --for=condition=Available deployment/external-secrets-webhook -n default --timeout=120s
-  changed_when: false
-  when: not ansible_check_mode
+    # 共有Namespace・Certificate・Ingress
+    # 全サービスが共有する外部公開の入口。サービスの追加・削除時は shared_ingress_routes を更新して再適用する。
+    # Certificate の検証（HTTP-01）は cert-manager の Webhook が起動してから通るため、ClusterIssuer の後に適用する。
+    # Ingress の検証は ingress-nginx の admission webhook を通るため、Controller の起動を待つ。
+    - name: Wait for ingress-nginx controller to become ready
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: ingress-nginx
+        name: ingress-nginx-controller
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 180
+      when: not ansible_check_mode
 
-- name: Generate ClusterSecretStore manifest for OCI Vault
-  template:
-    src: vault_store.yaml.j2
-    dest: /tmp/vault_store.yaml
-    mode: '0644'
-  when: not ansible_check_mode
+    - name: Deploy shared Namespace, Certificate and Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'shared_ingress.yaml.j2') | from_yaml_all | select | list }}"
+      when: not ansible_check_mode
 
-- name: Deploy ClusterSecretStore for OCI Vault
-  become_user: seiya
-  command: kubectl apply -f /tmp/vault_store.yaml
-  register: vault_store_deploy
-  changed_when: "'created' in vault_store_deploy.stdout or 'configured' in vault_store_deploy.stdout"
-  when: not ansible_check_mode
+    # External Secrets Operator
+    # 個人開発プロジェクト間で共有するDBパスワード等を、各プロジェクトの.envへ平文で
+    # 書き写す運用をやめ、OCI Vaultを真実源としてKubernetes Secretへ同期する。
+    # CRD（clustersecretstores/secretstores）のOpenAPIスキーマが大きく、通常の
+    # client-side apply が付与する last-applied-configuration アノテーションが
+    # Kubernetesのアノテーション上限（262144バイト）を超えるため、apply（アノテーション付与）は
+    # 使わず、モジュール既定の作成・パッチで適用する。
+    # external-secrets.yaml は専用Namespaceを作成せず、現在のコンテキスト
+    # （このクラスタでは default）にリソースを展開する。
+    - name: Deploy External Secrets Operator
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.url', 'https://github.com/external-secrets/external-secrets/releases/download/' ~ eso_version ~ '/external-secrets.yaml', split_lines=False) | from_yaml_all | select | list }}"
+
+    - name: Wait for External Secrets Operator webhook to become ready
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: default
+        name: external-secrets-webhook
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 120
+      when: not ansible_check_mode
+
+    - name: Deploy ClusterSecretStore for OCI Vault
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'vault_store.yaml.j2') | from_yaml_all | select | list }}"
+      when: not ansible_check_mode

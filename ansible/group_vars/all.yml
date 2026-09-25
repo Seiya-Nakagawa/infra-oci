@@ -23,6 +23,8 @@ k8s_version: "1.30"
 flannel_version: "v0.28.9"
 local_path_provisioner_version: "v0.0.37"
 metrics_server_version: "v0.9.0"
+ingress_nginx_version: "v1.10.1"
+cert_manager_version: "v1.14.5"
 pod_network_cidr: "10.244.0.0/16"
 cert_manager_email: "aibdlnew1.work@gmail.com"
 
