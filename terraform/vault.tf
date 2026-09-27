@@ -8,6 +8,11 @@ resource "oci_kms_vault" "secrets" {
   compartment_id = var.compartment_ocid
   display_name   = "${var.project_name}-vault"
   vault_type     = "DEFAULT"
+
+  # 誤った削除・置換を防ぐ（削除はスケジュール削除となり復旧に手間が掛かる）
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "oci_kms_key" "app_db_password_key" {
@@ -19,6 +24,10 @@ resource "oci_kms_key" "app_db_password_key" {
   key_shape {
     algorithm = "AES"
     length    = 32
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -42,7 +51,8 @@ resource "oci_vault_secret" "app_db_password" {
   # 値は初回作成時のみ Terraform が設定する。以降は MySQL の実パスワードに合わせて
   # 新バージョンを登録するため、Terraform がランダム値へ巻き戻さないようにする
   lifecycle {
-    ignore_changes = [secret_content]
+    prevent_destroy = true
+    ignore_changes  = [secret_content]
   }
 }
 
@@ -84,6 +94,7 @@ resource "oci_vault_secret" "backup_db_password" {
   }
 
   lifecycle {
-    ignore_changes = [secret_content]
+    prevent_destroy = true
+    ignore_changes  = [secret_content]
   }
 }
