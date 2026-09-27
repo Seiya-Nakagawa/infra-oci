@@ -11,13 +11,15 @@ resource "oci_core_instance" "main" {
     memory_in_gbs = var.instance_memory_in_gbs
   }
 
-  # Oracle Cloud Agentの設定 (Bastion用プラグインを無効化)
+  # Oracle Cloud Agentの設定
+  # BastionプラグインはOCI BastionのManaged SSH Sessionが一時鍵を
+  # 反映するために必要なため有効化する（bastion.tf）
   agent_config {
     is_management_disabled = false
     is_monitoring_disabled = false
 
     plugins_config {
-      desired_state = "DISABLED"
+      desired_state = "ENABLED"
       name          = "Bastion"
     }
   }

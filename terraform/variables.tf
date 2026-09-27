@@ -154,3 +154,10 @@ variable "notification_email" {
   description = "DBバックアップ失敗の通知先メールアドレス"
   type        = string
 }
+
+# OCI Bastion設定
+variable "bastion_max_session_ttl_in_seconds" {
+  description = "OCI Bastion Managed SSH Sessionの最大有効時間（秒）"
+  type        = number
+  default     = 1800
+}

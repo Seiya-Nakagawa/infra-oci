@@ -11,6 +11,8 @@
 # - objectstorage.tf: DBバックアップの保管先バケット
 # - notifications.tf: バックアップ失敗の通知
 # - iam-backup.tf:    バックアップ用のIAMポリシー
+# - bastion.tf:       OCI Bastion (Ansible CI/CD用のManaged SSH Session)
+# - iam-bastion.tf:   Bastionセッション作成用のIAMグループ・ポリシー
 # - variables.tf: 変数定義
 # - outputs.tf:  出力値定義
 # - versions.tf: Terraformバージョンとプロバイダー設定

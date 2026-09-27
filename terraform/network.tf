@@ -69,6 +69,21 @@ resource "oci_core_security_list" "main" {
   }
 
 
+  # Ingress Rule: SSH (22) - From OCI Bastion private endpoint (Managed SSH Session)
+  # Bastionのプライベート・エンドポイントは対象サブネット（このサブネット自身）内の
+  # IPアドレスを使用するため、インターネットへの新たな開放は発生しない
+  ingress_security_rules {
+    protocol    = "6" # TCP
+    source      = var.subnet_cidr_block
+    stateless   = false
+    description = "Allow SSH from OCI Bastion private endpoint (CI/CD)"
+
+    tcp_options {
+      min = 22
+      max = 22
+    }
+  }
+
   # Ingress Rule: HTTP (80)
   ingress_security_rules {
     protocol    = "6" # TCP
