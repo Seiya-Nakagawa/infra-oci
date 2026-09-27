@@ -46,14 +46,15 @@ resource "oci_core_instance" "main" {
   }
 
   # 永続化設定
-  preserve_boot_volume = false
+  # インスタンス削除時もブートボリューム（MySQL データを含む）を残す
+  preserve_boot_volume = true
 
   freeform_tags = {
     "Project"     = var.project_name
     "Environment" = var.environment
   }
 
-  # インスタンスの削除時にboot volumeを削除
+  # 誤った削除・置換を防ぐ
   lifecycle {
     prevent_destroy = true
     ignore_changes = [

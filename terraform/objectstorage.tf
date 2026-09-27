@@ -17,6 +17,11 @@ resource "oci_objectstorage_bucket" "db_backup" {
   access_type    = "NoPublicAccess"
   storage_tier   = "Standard"
   versioning     = "Disabled"
+
+  # バックアップごと失わないよう、誤った削除・置換を防ぐ
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "oci_objectstorage_object_lifecycle_policy" "db_backup" {
