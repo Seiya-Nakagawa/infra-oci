@@ -17,7 +17,10 @@
 
 インフラのライフサイクルは、`terraform/` でインスタンスを作成したうえで `ansible/` で
 OS・ミドルウェアを構成する 2 段構成になっている。
-本リポジトリにはステージング環境・CI/CD は無く、単一環境に対してローカルから適用する。
+本リポジトリはステージング環境を持たない単一環境の構成である。
+Terraform は GitHub Actions による CI/CD（PR で plan、main マージで apply）を経由し、
+Ansible は当面ローカルから直接適用する
+（[8章 基本設計書_基盤制御](docs/02.design/08.platform-control/8章_基本設計書_基盤制御.md) 参照）。
 
 ## 2. 固有コマンド
 
@@ -25,10 +28,14 @@ OS・ミドルウェアを構成する 2 段構成になっている。
 
 ### 2.1. Terraform
 
-- plan / apply / SSH 接続はグローバル共通スクリプト（`~/.claude/scripts/tf_plan.sh`・
-  `tf_apply.sh`・`tf_ssh_connect.sh`）を既定値のまま使用する
+- **本番適用（apply）は GitHub Actions 経由のみ**とする。ローカルから `apply` は行わない
+- ローカルでは `~/.claude/scripts/tf_plan.sh` で `plan` の内容確認のみ行う。
+  `tf_apply.sh` による本番適用は行わない。`tf_ssh_connect.sh` は引き続きインスタンスへの
+  SSH 接続確認に使用する
 - Terraform Cloud のセットアップ手順は
-  [01_TerraformCloudセットアップ.md](docs/04.build/01_TerraformCloudセットアップ.md) を参照する
+  [01_TerraformCloudセットアップ.md](docs/04.build/01_TerraformCloudセットアップ.md)、
+  GitHub Actions のセットアップ手順は
+  [05_GitHubActionsセットアップ.md](docs/04.build/05_GitHubActionsセットアップ.md) を参照する
 
 ### 2.2. Ansible
 
