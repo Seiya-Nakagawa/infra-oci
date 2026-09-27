@@ -1,0 +1,69 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+env:
+  TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform validate
+        run: terraform validate -no-color
+
+      - name: terraform plan
+        run: terraform plan -input=false -no-color
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform apply
+        run: terraform apply -input=false -no-color -auto-approve
