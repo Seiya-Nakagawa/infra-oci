@@ -1,0 +1,88 @@
+name: Ansible CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "scripts/run_ansible_bastion.sh"
+      - ".github/workflows/ansible.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "scripts/run_ansible_bastion.sh"
+      - ".github/workflows/ansible.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansible
+  cancel-in-progress: false
+
+env:
+  TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
+  TF_IN_AUTOMATION: "true"
+  OCI_CLI_USER: ${{ secrets.BASTION_OCI_USER_OCID }}
+  OCI_CLI_FINGERPRINT: ${{ secrets.BASTION_OCI_FINGERPRINT }}
+  OCI_CLI_KEY_CONTENT: ${{ secrets.BASTION_OCI_PRIVATE_KEY }}
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible / OCI CLI
+        run: |
+          pip install --disable-pip-version-check ansible-core==2.16.3 oci-cli==3.94.0
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Write Ansible Vault password
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_password
+
+      - name: Ansible dry-run (--check)
+        run: ./scripts/run_ansible_bastion.sh --check --diff
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible / OCI CLI
+        run: |
+          pip install --disable-pip-version-check ansible-core==2.16.3 oci-cli==3.94.0
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Write Ansible Vault password
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_password
+
+      - name: Ansible apply
+        run: ./scripts/run_ansible_bastion.sh
