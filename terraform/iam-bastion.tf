@@ -15,8 +15,12 @@ resource "oci_identity_policy" "cicd_bastion" {
   description    = "CI/CD専用グループにOCI Bastionのセッション管理のみを許可する"
   # Managed SSH Sessionの作成に必要な権限一式。Oracle公式のBastion IAM Policy Reference
   # （https://docs.oracle.com/en-us/iaas/Content/Bastion/Reference/bastionpolicyreference.htm）の
-  # 「create, connect to, and terminate sessions」の例に合わせる。manage bastion-session だけでは
-  # 対象インスタンス・VNIC・エージェントプラグインの参照ができず、セッション作成が404で失敗する。
+  # 「create, connect to, and terminate sessions」の例に加え、read private-ips を追加する。
+  # manage bastion-session だけでは対象インスタンス・VNIC・エージェントプラグインの参照ができず、
+  # セッション作成が404で失敗する。read private-ips が無い場合も、セッション作成時に指定した
+  # target-private-ip の検証（ListPrivateIps/GetPrivateIp、Core Services IAM Policy Reference
+  # https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/corepolicyreference.htm 参照）が
+  # 権限不足となり、「Unknown resource <private-ip>」で404になる。
   statements = [
     "allow group ${oci_identity_group.cicd_bastion.name} to use bastion in compartment id ${var.compartment_ocid}",
     "allow group ${oci_identity_group.cicd_bastion.name} to manage bastion-session in compartment id ${var.compartment_ocid}",
@@ -26,5 +30,6 @@ resource "oci_identity_policy" "cicd_bastion" {
     "allow group ${oci_identity_group.cicd_bastion.name} to read instance-agent-plugins in compartment id ${var.compartment_ocid}",
     "allow group ${oci_identity_group.cicd_bastion.name} to read vnic-attachments in compartment id ${var.compartment_ocid}",
     "allow group ${oci_identity_group.cicd_bastion.name} to read vnics in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read private-ips in compartment id ${var.compartment_ocid}",
   ]
 }
