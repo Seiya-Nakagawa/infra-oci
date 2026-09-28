@@ -13,9 +13,18 @@ resource "oci_identity_policy" "cicd_bastion" {
   compartment_id = var.tenancy_ocid
   name           = "${var.project_name}-cicd-bastion-policy"
   description    = "CI/CD専用グループにOCI Bastionのセッション管理のみを許可する"
+  # Managed SSH Sessionの作成に必要な権限一式。Oracle公式のBastion IAM Policy Reference
+  # （https://docs.oracle.com/en-us/iaas/Content/Bastion/Reference/bastionpolicyreference.htm）の
+  # 「create, connect to, and terminate sessions」の例に合わせる。manage bastion-session だけでは
+  # 対象インスタンス・VNIC・エージェントプラグインの参照ができず、セッション作成が404で失敗する。
   statements = [
+    "allow group ${oci_identity_group.cicd_bastion.name} to use bastion in compartment id ${var.compartment_ocid}",
     "allow group ${oci_identity_group.cicd_bastion.name} to manage bastion-session in compartment id ${var.compartment_ocid}",
-    # セッション作成時にBastion自体を参照するために必要な最小限の読み取り権限
-    "allow group ${oci_identity_group.cicd_bastion.name} to read bastion in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read instances in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read vcn in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read subnets in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read instance-agent-plugins in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read vnic-attachments in compartment id ${var.compartment_ocid}",
+    "allow group ${oci_identity_group.cicd_bastion.name} to read vnics in compartment id ${var.compartment_ocid}",
   ]
 }
