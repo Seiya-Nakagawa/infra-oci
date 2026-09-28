@@ -82,7 +82,7 @@ ssh-keygen -t ed25519 -N "" -f "$SESSION_DIR/id_ed25519" -q
 
 # --- Create Bastion Managed SSH Session ---
 echo "=== [2/3] OCI Bastion の Managed SSH Session を作成中... ==="
-SESSION_ID=$(oci --debug bastion session create-managed-ssh \
+SESSION_ID=$(oci bastion session create-managed-ssh \
     --bastion-id "$BASTION_ID" \
     --target-resource-id "$INSTANCE_OCID" \
     --target-os-username "$OS_USERNAME" \
