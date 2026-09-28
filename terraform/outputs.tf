@@ -94,3 +94,16 @@ output "backup_topic_id" {
   description = "OCID of the notification topic for backup failures"
   value       = oci_ons_notification_topic.backup_failure.id
 }
+
+# OCI Bastion OCID (CI/CDがManaged SSH Session作成に使用)
+output "bastion_id" {
+  description = "OCID of the OCI Bastion used for Ansible CI/CD sessions"
+  value       = oci_bastion_bastion.main.id
+}
+
+# テナンシOCID (CI/CDのOCI CLI認証に使用)
+output "oci_tenancy_ocid" {
+  description = "OCID of the OCI tenancy"
+  value       = var.tenancy_ocid
+  sensitive   = true
+}
