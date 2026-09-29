@@ -23,6 +23,7 @@ OS・ミドルウェアを構成する 2 段構成になっています。
 * **[Terraform Cloud セットアップ](docs/04.build/01_TerraformCloudセットアップ.md)**: Workspace の設定手順
 * **[SSH接続手順](docs/04.build/02_SSH接続手順.md)**: パブリックIPを経由した直接 SSH 接続手順
 * **[Ansibleによるサーバ構成管理](docs/04.build/03_Ansibleによるサーバ構成管理.md)**: OS / Kubernetes / MySQL の構築手順
+* **[OCI Bastionセットアップ](docs/04.build/06_OCIBastionセットアップ.md)**: GitHub Actions から Ansible を適用するための Bastion 設定手順
 
 ---
 
@@ -96,6 +97,13 @@ Vault パスワードは `ansible/.vault_password`（Git 管理外）に配置�
 echo "{Vault のパスワード}" > ansible/.vault_password
 chmod 600 ansible/.vault_password
 ```
+
+### CI/CD（GitHub Actions 経由）
+
+`ansible/**` を含む Pull Request の作成・更新で `--check` ドライラン、main へのマージで実適用が
+自動実行されます。OCI Bastion の Managed SSH Session を経由するため、セキュリティ・リストへの
+新たな SSH ポート開放は発生しません。セットアップ手順は
+**[OCI Bastionセットアップ](docs/04.build/06_OCIBastionセットアップ.md)** を参照してください。
 
 ### SSH 接続
 

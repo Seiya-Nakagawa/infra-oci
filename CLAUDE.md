@@ -12,14 +12,15 @@
 | ---- | ---- |
 | `terraform/` | OCI インフラ定義（VCN・サブネット・Compute・Vault 等）。state は Terraform Cloud（CLI-driven workflow）で管理する |
 | `ansible/` | Compute インスタンスの構成管理。`site.yml` が `os` → `kubernetes` → `mysql` → `backup` の順に 4 つのロールを適用する |
-| `scripts/` | このリポジトリ固有のスクリプト（`run_ansible.sh`） |
+| `scripts/` | このリポジトリ固有のスクリプト（`run_ansible.sh`・`run_ansible_bastion.sh`） |
 | `docs/` | 要件定義書・基本設計書・詳細設計書・構築手順書 |
 
 インフラのライフサイクルは、`terraform/` でインスタンスを作成したうえで `ansible/` で
 OS・ミドルウェアを構成する 2 段構成になっている。
 本リポジトリはステージング環境を持たない単一環境の構成である。
-Terraform は GitHub Actions による CI/CD（PR で plan、main マージで apply）を経由し、
-Ansible は当面ローカルから直接適用する
+Terraform・Ansible とも GitHub Actions による CI/CD（PR でドライラン、main マージで実適用）を経由する。
+Ansible は OCI Bastion の Managed SSH Session 経由で接続し、セキュリティ・リストへ
+新たな SSH ポートを開放しない
 （[8章 基本設計書_基盤制御](docs/02.design/08.platform-control/8章_基本設計書_基盤制御.md) 参照）。
 
 ## 2. 固有コマンド
@@ -39,10 +40,19 @@ Ansible は当面ローカルから直接適用する
 
 ### 2.2. Ansible
 
-- `./scripts/run_ansible.sh [ansible-playbook のオプション]`: `terraform output` から接続先
+- **本番適用（実適用）は GitHub Actions 経由のみ**とする。ローカルからの実適用は行わない
+- `./scripts/run_ansible.sh [ansible-playbook のオプション]`: 作業端末から直接 SSH で接続する
+  ローカル実行用。`terraform output` から接続先
   （`instance_public_ip`・`instance_user`・`oci_vault_id`・`oci_region`・`oci_compartment_ocid`）を
-  解決して `ansible-playbook` を実行する。引数はそのまま `ansible-playbook` へ渡る
+  解決して `ansible-playbook` を実行する。引数はそのまま `ansible-playbook` へ渡る。
+  内容確認（`--check`）または障害調査時の直接 SSH 接続にのみ使用する
+- `./scripts/run_ansible_bastion.sh [ansible-playbook のオプション]`: GitHub Actions から
+  OCI Bastion の Managed SSH Session を経由して接続する CI/CD 用。`Ansible CI/CD` ワークフロー
+  （`.github/workflows/ansible.yml`）が使用する。ローカルから手動実行する場合は、
+  CI/CD 専用 IAM ユーザーの API キーで OCI CLI が認証済みであることが前提
 - ロール単位で適用する場合は同名のタグ（`--tags os` など）を指定する
 - MySQL のパスワード等は Ansible Vault で暗号化する。Vault パスワードは
   `ansible/.vault_password`（Git 管理外）に置き、`ansible/ansible.cfg` の `vault_password_file` で
   参照するため、実行時のオプション指定は不要
+- OCI Bastion のセットアップ手順は
+  [06_OCIBastionセットアップ.md](docs/04.build/06_OCIBastionセットアップ.md) を参照する
