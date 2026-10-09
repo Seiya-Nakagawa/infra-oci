@@ -45,9 +45,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Antigravity CLI
-.antigravitycli/
-
 # IDEs
 .vscode/
 .idea/
