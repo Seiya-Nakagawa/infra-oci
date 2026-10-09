@@ -51,8 +51,8 @@ MySQL サーバを構築する手順。各レイヤーの設計は
 踏み台を経由せず、インスタンスのパブリックIPに直接 SSH 接続できるか確認します。
 
 ```bash
-# インスタンスのパブリックIPに直接SSH接続 (IP: 217.142.230.83)
-ssh -i ~/.ssh/id_rsa seiya@217.142.230.83
+# インスタンスのパブリックIPに直接SSH接続（作業端末の ~/.ssh/config にホスト別名 oci-server を定義しておく）
+ssh oci-server
 ```
 
 無事にターゲットインスタンスに接続でき、`seiya` ユーザーから `sudo su -` で root になれることが確認できたら、`exit` でローカルに戻ります。
@@ -112,7 +112,7 @@ ansible-vault encrypt_string 'YourActualMySQLPasswordHere' --name 'vault_mysql_p
 
 #### 3.3.1. インベントリファイルの確認
 
-`ansible/hosts.yml` の `ansible_host` が、インスタンスのパブリックIP（`217.142.230.83`）に設定されていることを確認してください。
+`ansible/hosts.yml` の `ansible_host` が、`~/.ssh/config` のホスト別名（`oci-server`）に設定されていることを確認してください。
 
 #### 3.3.2. 構文チェック (Syntax Check)
 
