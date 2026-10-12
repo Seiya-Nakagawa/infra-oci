@@ -87,16 +87,9 @@ variable "subnet_cidr_block" {
 }
 
 # アプリケーション設定
-variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH directly to the instance public IP (default: 0.0.0.0/0)"
-  type        = string
-  default     = "0.0.0.0/0"
-}
-
 variable "allowed_client_cidr" {
-  description = "CIDR block allowed to SSH directly to the instance (Your home IP)"
+  description = "CIDR block allowed to SSH directly to the instance (Your home IP). No default to avoid opening SSH to the internet by omission"
   type        = string
-  default     = "0.0.0.0/0"
 }
 
 variable "app_http_port" {
