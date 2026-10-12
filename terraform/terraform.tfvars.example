@@ -39,9 +39,9 @@ compartment_ocid = "ocid1.compartment.oc1..aaaaaaaa..."
 # (オプション) カスタムOS Image OCID
 # os_image_id = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaa..."
 
-# (オプション) SSH接続を許可するCIDR (デフォルト: 0.0.0.0/0)
-# セキュリティ向上のため、本番環境では自分のIPアドレスに制限することを推奨
-# allowed_ssh_cidr = "123.456.789.0/32"
+# 直接SSH接続を許可する接続元CIDR (必須。デフォルトなし)
+# 自分のIPアドレスに制限する
+allowed_client_cidr = "203.0.113.10/32"
 
 # (オプション) プロジェクト名
 # project_name = "infra-oci"

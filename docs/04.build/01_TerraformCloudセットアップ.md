@@ -83,6 +83,7 @@ Workspace の **Variables** タブで、以下の Terraform Variables を登録�
 | `private_key` | 秘密鍵の内容（改行を含めたそのままの文字列） | 有効 |
 | `compartment_ocid` | Compartment OCID | 有効 |
 | `ssh_public_key` | インスタンスに登録する SSH 公開鍵 | 無効 |
+| `allowed_client_cidr` | 直接 SSH を許可する接続元 CIDR（既定値なし。必須） | 無効 |
 
 `private_key` には、秘密鍵ファイルの内容をそのまま貼り付ける。
 
@@ -92,7 +93,7 @@ cat ~/.oci/oci_api_key.pem
 
 - 秘密鍵ファイルの内容を表示する。出力全体をコピーして `private_key` に貼り付ける
 
-上記以外の変数（`region`、`allowed_ssh_cidr` 等）は既定値を持つため、変更が必要な場合のみ登録する。
+上記以外の変数（`region` 等）は既定値を持つため、変更が必要な場合のみ登録する。
 複数の Workspace で OCI 認証情報を共有する場合は、Organization Settings の **Variable sets** に
 共通変数（`tenancy_ocid`、`user_ocid`、`fingerprint`、`private_key`）をまとめ、対象 Workspace へ適用する。
 
