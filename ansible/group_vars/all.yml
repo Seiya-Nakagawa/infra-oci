@@ -62,6 +62,10 @@ shared_tls_secret_name: "technohonesty-com-tls"
 shared_ingress_routes:
   - { path_prefix: "kakeibo", service_name: "kakeibo-web", service_port: 80 }
   - { path_prefix: "portfolio", service_name: "portfolio-web", service_port: 80 }
+# オリジンを分離するサービス用のサブドメイン。ルート（/）で公開する。
+# DNS は外部でワイルドカード（*.technohonesty.com）の A レコードとして管理するため、サブドメインごとの登録は不要。
+shared_ingress_root_hosts:
+  - { host: "skillsheet.technohonesty.com", service_name: "portfolio-web", service_port: 80 }
 
 # DB バックアップ settings
 # oci_cli_version はホスト上の OCI CLI（インスタンスプリンシパル用）のバージョン
@@ -70,6 +74,10 @@ backup_oci_venv: "/opt/oci-cli"
 backup_secret_name: "backup-dbuser-password"
 backup_db_user: "backup-dbuser"
 backup_time: "03:00:00"
+# アップロード画像のバックアップ対象（ホスト上の hostPath ディレクトリ）。
+# name はオブジェクト名（media-{name}.tar.gz）に使う
+backup_media_dirs:
+  - { name: "portfolio", path: "/var/lib/portfolio/media" }
 # backup_bucket_name / backup_namespace / backup_topic_id は terraform output から
 # scripts/run_ansible.sh 経由で -e として渡される
 

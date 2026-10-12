@@ -1,5 +1,6 @@
 #!/bin/bash
 # 全データベースを個別にダンプし、gzip 圧縮して Object Storage へ退避する。
+# あわせて、アップロード画像のディレクトリ（BACKUP_MEDIA_DIRS）を tar.gz にして退避する。
 # 月初は、月次用のプレフィックスにも同じダンプを保管する。
 set -euo pipefail
 
@@ -52,4 +53,25 @@ for db in "${DATABASES[@]}"; do
   fi
   echo "バックアップ完了: ${db}"
   rm -f "$dump_file"
+done
+
+# アップロード画像のディレクトリをアーカイブする。未作成（アプリの初回デプロイ前）の場合は対象外とする
+for entry in ${BACKUP_MEDIA_DIRS:-}; do
+  name="${entry%%=*}"
+  dir="${entry#*=}"
+  if [ ! -d "$dir" ]; then
+    echo "バックアップ対象外（ディレクトリなし）: ${dir}"
+    continue
+  fi
+  archive="$WORK_DIR/media-${name}.tar.gz"
+  # 書き込み中のファイルがあると tar は終了コード 1 を返すため、致命的でない 1 は許容する
+  tar -czf "$archive" -C "$dir" . || [ $? -eq 1 ]
+  gzip -t "$archive"
+
+  upload "daily/${TODAY}/media-${name}.tar.gz" "$archive"
+  if [ "$IS_FIRST_DAY" = "yes" ]; then
+    upload "monthly/${THIS_MONTH}/media-${name}.tar.gz" "$archive"
+  fi
+  echo "バックアップ完了: media-${name}"
+  rm -f "$archive"
 done
