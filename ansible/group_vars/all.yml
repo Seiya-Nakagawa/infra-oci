@@ -63,7 +63,7 @@ shared_ingress_routes:
   - { path_prefix: "kakeibo", service_name: "kakeibo-web", service_port: 80 }
   - { path_prefix: "portfolio", service_name: "portfolio-web", service_port: 80 }
 # オリジンを分離するサービス用のサブドメイン。ルート（/）で公開する。
-# DNS レコード（A レコード）は外部で管理するため、適用前に登録しておく（証明書の発行に必要）。
+# DNS は外部でワイルドカード（*.technohonesty.com）の A レコードとして管理するため、サブドメインごとの登録は不要。
 shared_ingress_root_hosts:
   - { host: "skillsheet.technohonesty.com", service_name: "portfolio-web", service_port: 80 }
 
