@@ -140,7 +140,8 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 - **外部アクセス**: OCIのセキュリティ・リストで 80/443 ポートを開放し、外部から Kubernetes Ingress Controller Pod に直接アクセスする（ホストOS上のNginxは使用しない）。
 - **SSL/TLS 終端**: Ingress Controller で SSL 終端を実施し、`cert-manager` による Let's Encrypt 証明書の自動管理を行う。
 - **Ingress リソース**: 共有Namespace（`app-prod`）に1つだけ作成し、全サービスのホスト名・パスのルーティングを集約する。Ansible の kubernetes ロールで適用する。サービスの追加・削除時はこのルーティングを更新する。
-- **TLS 証明書**: 共有Ingress用の Certificate を基盤側で1つ管理する。各サービスは Ingress・Certificate を作成しない。
+- **ホスト名**: メインのホスト（`technohonesty.com`、パスプレフィックスで振り分け）に加え、サブドメインのホストをルート（`/`）で公開できる。割り当ては[台帳](../02.design/99.appendix/ホスト名・パス割り当て台帳.md)に従う。
+- **TLS 証明書**: 共有Ingress用の Certificate を基盤側で1つ管理し、全ホスト名を含める。各サービスは Ingress・Certificate を作成しない。
 
 #### 3.4.7. Kubernetes構成：ConfigMap
 

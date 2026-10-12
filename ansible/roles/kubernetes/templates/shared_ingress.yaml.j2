@@ -15,6 +15,9 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - {{ shared_ingress_host }}
+{% for root_host in shared_ingress_root_hosts %}
+    - {{ root_host.host }}
+{% endfor %}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -29,6 +32,9 @@ spec:
   tls:
     - hosts:
         - {{ shared_ingress_host }}
+{% for root_host in shared_ingress_root_hosts %}
+        - {{ root_host.host }}
+{% endfor %}
       secretName: {{ shared_tls_secret_name }}
   rules:
     - host: {{ shared_ingress_host }}
@@ -42,4 +48,17 @@ spec:
                 name: {{ route.service_name }}
                 port:
                   number: {{ route.service_port }}
+{% endfor %}
+{% for root_host in shared_ingress_root_hosts %}
+    - host: {{ root_host.host }}
+      http:
+        paths:
+          # 共有 Ingress の rewrite-target（/$2）に合わせ、全体を第2グループで受けてそのまま転送する
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ root_host.service_name }}
+                port:
+                  number: {{ root_host.service_port }}
 {% endfor %}
