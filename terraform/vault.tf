@@ -98,3 +98,38 @@ resource "oci_vault_secret" "backup_db_password" {
     ignore_changes  = [secret_content]
   }
 }
+
+# Portfolio（SkillSheet）の外部アカウント認証（Google・GitHub）で使う OAuth クライアントの
+# ID・シークレット。Google・GitHub 側で発行される外部由来の値であり、Terraform へ渡すと
+# state に平文で残るため、入れ物のみ管理する。作成時はプレースホルダーを設定し、
+# 実際の値は OCI コンソールで新しいバージョンとして登録する。
+# 不要になった場合は、このブロックを削除する PR でシークレットを削除する。
+locals {
+  portfolio_oauth_secret_names = toset([
+    "portfolio-google-client-id",
+    "portfolio-google-client-secret",
+    "portfolio-github-client-id",
+    "portfolio-github-client-secret",
+  ])
+}
+
+resource "oci_vault_secret" "portfolio_oauth" {
+  for_each = local.portfolio_oauth_secret_names
+
+  compartment_id = var.compartment_ocid
+  vault_id       = oci_kms_vault.secrets.id
+  key_id         = oci_kms_key.app_db_password_key.id
+  secret_name    = each.key
+
+  secret_content {
+    content_type = "BASE64"
+    content      = base64encode("placeholder-set-the-real-value-in-the-oci-console")
+  }
+
+  # 実際の値は運営者が新しいバージョンとして登録するため、Terraform が
+  # プレースホルダーへ巻き戻さないようにする
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [secret_content]
+  }
+}
