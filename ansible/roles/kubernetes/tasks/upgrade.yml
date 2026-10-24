@@ -1,0 +1,116 @@
+---
+# Kubernetes のマイナーバージョン更新（基本設計書 12.4.1）
+# 稼働中のクラスターまたは kubelet が k8s_version より低い場合のみ実行する。
+# 更新は 1 マイナーずつ。--check では実行しない（実適用でのみ検証される）。
+# control plane の更新後に失敗しても、再実行で kubelet の更新から再開できるよう、
+# control plane と kubelet のバージョンを別々に判定する。
+- name: Check if Kubernetes is initialized (for upgrade)
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_upgrade_init_check
+
+- name: Upgrade Kubernetes cluster
+  when: k8s_upgrade_init_check.stat.exists and not ansible_check_mode
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  block:
+    - name: Get current Kubernetes versions
+      shell: |
+        set -o pipefail
+        kubectl version -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["serverVersion"]["gitVersion"])'
+        kubelet --version
+      args:
+        executable: /bin/bash
+      register: k8s_current_versions
+      changed_when: false
+
+    - name: Determine whether an upgrade is required
+      set_fact:
+        k8s_server_minor: "{{ (k8s_current_versions.stdout_lines[0] | regex_search('^v1\\.(\\d+)\\.', '\\1'))[0] | int }}"
+        k8s_kubelet_minor: "{{ (k8s_current_versions.stdout_lines[1] | regex_search('v1\\.(\\d+)\\.', '\\1'))[0] | int }}"
+        k8s_target_minor: "{{ k8s_version.split('.')[1] | int }}"
+
+    - name: Assert that the upgrade is at most one minor version
+      assert:
+        that:
+          - k8s_target_minor | int - k8s_server_minor | int <= 1
+          - k8s_target_minor | int - k8s_kubelet_minor | int <= 1
+        fail_msg: >-
+          Kubernetes は 1 マイナーずつしか更新できません
+          （control plane: 1.{{ k8s_server_minor }}, kubelet: 1.{{ k8s_kubelet_minor }}, 指定: {{ k8s_version }}）。
+          k8s_version を 1 つずつ上げてください。
+
+    - name: Run the upgrade
+      when: k8s_server_minor | int < k8s_target_minor | int or k8s_kubelet_minor | int < k8s_target_minor | int
+      block:
+        - name: Upgrade kubeadm to the latest patch of the target minor version
+          apt:
+            name: "kubeadm={{ k8s_version }}.*"
+            state: present
+            update_cache: yes
+            allow_change_held_packages: yes
+
+        - name: Get the target Kubernetes version
+          command: kubeadm version -o short
+          register: kubeadm_target_version
+          changed_when: false
+
+        - name: Show the upgrade plan
+          command: "kubeadm upgrade plan {{ kubeadm_target_version.stdout }}"
+          changed_when: false
+          when: k8s_server_minor | int < k8s_target_minor | int
+
+        - name: Upgrade the control plane via kubeadm
+          command: "kubeadm upgrade apply {{ kubeadm_target_version.stdout }} -y"
+          changed_when: true
+          when: k8s_server_minor | int < k8s_target_minor | int
+
+        - name: Get the node name
+          command: kubectl get nodes -o jsonpath='{.items[0].metadata.name}'
+          register: k8s_node_name
+          changed_when: false
+
+        - name: Upgrade kubelet and kubectl
+          block:
+            - name: Drain the node
+              command: "kubectl drain {{ k8s_node_name.stdout }} --ignore-daemonsets --delete-emptydir-data --timeout=300s"
+              changed_when: true
+
+            - name: Upgrade kubelet and kubectl to the target version
+              apt:
+                name:
+                  - "kubelet={{ kubeadm_target_version.stdout | regex_replace('^v', '') }}-*"
+                  - "kubectl={{ kubeadm_target_version.stdout | regex_replace('^v', '') }}-*"
+                state: present
+                allow_change_held_packages: yes
+
+            - name: Restart kubelet
+              systemd:
+                name: kubelet
+                state: restarted
+                daemon_reload: yes
+          always:
+            - name: Uncordon the node
+              command: "kubectl uncordon {{ k8s_node_name.stdout }}"
+              changed_when: true
+
+        - name: Pin Kubernetes packages versions
+          dpkg_selections:
+            name: "{{ item }}"
+            selection: hold
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
+
+        - name: Wait for API Server to become healthy
+          command: kubectl get --raw /readyz
+          register: k8s_upgrade_ready
+          until: k8s_upgrade_ready.rc == 0
+          retries: 30
+          delay: 10
+          changed_when: false
+
+        - name: Wait for the node to become Ready
+          command: "kubectl wait --for=condition=Ready node/{{ k8s_node_name.stdout }} --timeout=300s"
+          changed_when: false
