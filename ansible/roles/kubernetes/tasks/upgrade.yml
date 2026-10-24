@@ -90,6 +90,15 @@
                 state: restarted
                 daemon_reload: yes
           always:
+            # kubelet の再起動直後は kube-apiserver（静的 Pod）が起動中で接続を拒否するため、正常になるまで待つ
+            - name: Wait for API Server to become healthy
+              command: kubectl get --raw /readyz
+              register: k8s_upgrade_ready
+              until: k8s_upgrade_ready.rc == 0
+              retries: 30
+              delay: 10
+              changed_when: false
+
             - name: Uncordon the node
               command: "kubectl uncordon {{ k8s_node_name.stdout }}"
               changed_when: true
@@ -103,14 +112,17 @@
             - kubeadm
             - kubectl
 
-        - name: Wait for API Server to become healthy
-          command: kubectl get --raw /readyz
-          register: k8s_upgrade_ready
-          until: k8s_upgrade_ready.rc == 0
-          retries: 30
-          delay: 10
-          changed_when: false
-
         - name: Wait for the node to become Ready
           command: "kubectl wait --for=condition=Ready node/{{ k8s_node_name.stdout }} --timeout=300s"
           changed_when: false
+
+    # 更新が途中で失敗して cordon されたままになった場合に、再実行で復旧できるようにする（単一ノード構成）
+    - name: Get the node scheduling state
+      command: kubectl get nodes -o jsonpath='{.items[0].metadata.name} {.items[0].spec.unschedulable}'
+      register: k8s_node_state
+      changed_when: false
+
+    - name: Uncordon the node if it is left cordoned
+      command: "kubectl uncordon {{ k8s_node_state.stdout.split(' ')[0] }}"
+      when: k8s_node_state.stdout.split(' ') | length > 1 and k8s_node_state.stdout.split(' ')[1] == 'true'
+      changed_when: true
