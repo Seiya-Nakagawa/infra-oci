@@ -82,7 +82,7 @@ backup_media_dirs:
 # scripts/run_ansible.sh 経由で -e として渡される
 
 # External Secrets Operator settings
-eso_version: "v2.9.0"
+eso_version: "v2.14.0"
 eso_cluster_secret_store_name: "oci-vault"
 
 # OCI Vault settings (oci_vault_id / oci_region / oci_compartment_ocid は
