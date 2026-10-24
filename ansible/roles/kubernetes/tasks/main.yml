@@ -42,19 +42,20 @@
 - name: Download Kubernetes GPG key
   get_url:
     url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key"
-    dest: /tmp/kubernetes-release.key
+    dest: "/tmp/kubernetes-release-v{{ k8s_version }}.key"
     mode: '0644'
   check_mode: no
 
+# 署名鍵はマイナーバージョンごとに異なるため、版ごとのファイル名で保持する
 - name: De-armor Kubernetes GPG key
-  command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-release.key
+  command: "gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring-v{{ k8s_version }}.gpg /tmp/kubernetes-release-v{{ k8s_version }}.key"
   args:
-    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    creates: "/etc/apt/keyrings/kubernetes-apt-keyring-v{{ k8s_version }}.gpg"
   check_mode: no
 
 - name: Add Kubernetes APT repository
   copy:
-    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring-v{{ k8s_version }}.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
     dest: /etc/apt/sources.list.d/kubernetes.list
     mode: '0644'
   check_mode: no
@@ -103,6 +104,10 @@
   register: kubeadm_init_output
   when: not k8s_init_check.stat.exists
   changed_when: true
+
+# 4.1. Upgrade Kubernetes（マイナーバージョンが k8s_version より低い場合のみ）
+- name: Upgrade Kubernetes to the specified minor version
+  import_tasks: upgrade.yml
 
 # 5. Configure Kubeconfig for user seiya
 - name: Create .kube directory for seiya
