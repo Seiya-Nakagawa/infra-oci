@@ -17,7 +17,7 @@ sysctl_parameters:
   - { name: "vm.max_map_count", value: 262144 }
 
 # Kubernetes settings
-k8s_version: "1.32"
+k8s_version: "1.33"
 
 # Kubernetes アドオンのバージョン（マニフェスト URL の固定に使用）
 flannel_version: "v0.28.9"
