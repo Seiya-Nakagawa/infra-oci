@@ -20,10 +20,16 @@ sysctl_parameters:
 k8s_version: "1.37"
 
 # Kubernetes アドオンのバージョン（マニフェスト URL の固定に使用）
+# `# renovate:` コメント付きの変数は、Renovate がパッチバージョンを自動更新する（renovate.json）。
+# ingress-nginx はアーカイブ済みのため対象外
+# renovate: datasource=github-releases depName=flannel-io/flannel
 flannel_version: "v0.28.10"
+# renovate: datasource=github-releases depName=rancher/local-path-provisioner
 local_path_provisioner_version: "v0.0.37"
+# renovate: datasource=github-releases depName=kubernetes-sigs/metrics-server
 metrics_server_version: "v0.9.0"
 ingress_nginx_version: "v1.10.1"
+# renovate: datasource=github-releases depName=cert-manager/cert-manager
 cert_manager_version: "v1.14.5"
 pod_network_cidr: "10.244.0.0/16"
 cert_manager_email: "aibdlnew1.work@gmail.com"
@@ -69,6 +75,7 @@ shared_ingress_root_hosts:
 
 # DB バックアップ settings
 # oci_cli_version はホスト上の OCI CLI（インスタンスプリンシパル用）のバージョン
+# renovate: datasource=pypi depName=oci-cli
 oci_cli_version: "3.94.0"
 backup_oci_venv: "/opt/oci-cli"
 backup_secret_name: "backup-dbuser-password"
@@ -82,6 +89,7 @@ backup_media_dirs:
 # scripts/run_ansible.sh 経由で -e として渡される
 
 # External Secrets Operator settings
+# renovate: datasource=github-releases depName=external-secrets/external-secrets
 eso_version: "v2.14.0"
 eso_cluster_secret_store_name: "oci-vault"
 
