@@ -207,8 +207,11 @@
     # Ingress Controller (ingress-nginx)
     # 上流マニフェストを kustomize のパッチで加工して描画する。描画は毎回上流から行うため、
     # 加工が実行のたびに累積することはない。
+    # 描画タスク（check_mode: false）が --check でも動くよう、一時ディレクトリへの作成・生成も
+    # check_mode: false で実行する（/tmp 配下の作業用ファイルのみで、クラスターには影響しない）。
     - name: Create kustomize directory for ingress-nginx
       become_user: root
+      check_mode: false
       file:
         path: /tmp/kustomize/ingress-nginx
         state: directory
@@ -217,6 +220,7 @@
 
     - name: Generate kustomization for ingress-nginx (HostNetwork)
       become_user: root
+      check_mode: false
       copy:
         dest: /tmp/kustomize/ingress-nginx/kustomization.yaml
         owner: seiya
@@ -256,6 +260,7 @@
     # Metrics Server
     - name: Create kustomize directory for Metrics Server
       become_user: root
+      check_mode: false
       file:
         path: /tmp/kustomize/metrics-server
         state: directory
@@ -264,6 +269,7 @@
 
     - name: Generate kustomization for Metrics Server (insecure kubelet TLS)
       become_user: root
+      check_mode: false
       copy:
         dest: /tmp/kustomize/metrics-server/kustomization.yaml
         owner: seiya
