@@ -4,6 +4,7 @@
   "enabledManagers": ["custom.regex"],
   "schedule": ["before 6am on monday"],
   "timezone": "Asia/Tokyo",
+  "minimumReleaseAge": "7 days",
   "customManagers": [
     {
       "customType": "regex",
