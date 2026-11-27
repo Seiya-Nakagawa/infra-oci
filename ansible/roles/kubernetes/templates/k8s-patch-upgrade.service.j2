@@ -1,0 +1,11 @@
+[Unit]
+Description=Upgrade Kubernetes to the latest patch version
+After=network-online.target
+Wants=network-online.target
+OnFailure=k8s-patch-upgrade-notify.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/k8s-patch-upgrade.sh
+# 処理が止まった場合に失敗として扱う
+TimeoutStartSec=30min

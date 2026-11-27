@@ -1,0 +1,34 @@
+---
+# Kubernetes のパッチバージョンを、サーバ上の定期実行で更新する仕組みの配置
+- name: Deploy Kubernetes patch upgrade scripts
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/local/sbin/{{ item }}"
+    mode: '0750'
+    owner: root
+    group: root
+  loop:
+    - k8s-patch-upgrade.sh
+    - k8s-patch-upgrade-notify.sh
+
+- name: Deploy Kubernetes patch upgrade systemd units
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: '0644'
+  loop:
+    - k8s-patch-upgrade.service
+    - k8s-patch-upgrade-notify.service
+    - k8s-patch-upgrade.timer
+  register: k8s_patch_upgrade_units
+
+- name: Reload systemd daemon if patch upgrade units changed
+  command: systemctl daemon-reload
+  when: k8s_patch_upgrade_units.changed and not ansible_check_mode
+
+- name: Enable and start Kubernetes patch upgrade timer
+  service:
+    name: k8s-patch-upgrade.timer
+    state: started
+    enabled: yes
+  when: not ansible_check_mode

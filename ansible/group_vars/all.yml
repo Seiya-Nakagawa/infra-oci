@@ -18,6 +18,8 @@ sysctl_parameters:
 
 # Kubernetes settings
 k8s_version: "1.37"
+# パッチバージョンの自動更新を実行する時刻。DB バックアップ（backup_time）より後にする
+k8s_patch_upgrade_time: "04:00:00"
 
 # Kubernetes アドオンのバージョン（マニフェスト URL の固定に使用）
 # `# renovate:` コメント付きの変数は、Renovate がパッチバージョンを自動更新する（renovate.json）。

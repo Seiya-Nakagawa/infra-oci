@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kubernetes patch upgrade
+
+[Timer]
+OnCalendar=*-*-* {{ k8s_patch_upgrade_time }}
+# 停止を伴うため、実行できなかった回を起動後に実行しない
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -204,11 +204,13 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 | ---- | ------ |
 | スクリプト | `/usr/local/sbin/k8s-patch-upgrade.sh`（`--dry-run` で内容確認） |
 | サービス | `k8s-patch-upgrade.service`（oneshot） |
-| タイマー | `k8s-patch-upgrade.timer`（`OnCalendar=*-*-* 04:00:00`、`Persistent=false`） |
+| タイマー | `k8s-patch-upgrade.timer`（`OnCalendar=*-*-* 04:00:00`、`Persistent=false`）。時刻は `k8s_patch_upgrade_time` |
 | 通知 | `k8s-patch-upgrade-notify.service`（サービスの `OnFailure` から起動）。通知先はバックアップ失敗と同じトピック |
 | バックアップの成功判定 | `mysql-backup.service` の直近の実行結果が成功で、終了日時が当日であること |
 | 失敗の記録 | `/var/lib/k8s-patch-upgrade/failed`。存在する間は更新しない |
 | drain のタイムアウト | 300 秒 |
+| サービスのタイムアウト | 30 分（超過は失敗） |
+| マイナー更新との排他 | `upgrade.yml` が実行中のサービスの終了を待ち、更新の間はタイマーを停止する |
 
 - ログは `journalctl -u k8s-patch-upgrade.service` で確認する
 - 失敗の記録がある場合は、原因に対処したうえで記録ファイルを削除する
