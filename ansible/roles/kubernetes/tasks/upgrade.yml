@@ -14,6 +14,16 @@
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   block:
+    # パッチ自動更新と同時に実行しない。oneshot のサービスは実行中の状態が activating になる
+    - name: Wait for a running patch upgrade to finish
+      command: systemctl is-active k8s-patch-upgrade.service
+      register: k8s_patch_upgrade_state
+      until: k8s_patch_upgrade_state.stdout != 'activating'
+      retries: 180
+      delay: 10
+      changed_when: false
+      failed_when: k8s_patch_upgrade_state.stdout == 'activating'
+
     - name: Get current Kubernetes versions
       shell: |
         set -o pipefail
@@ -43,6 +53,12 @@
     - name: Run the upgrade
       when: k8s_server_minor | int < k8s_target_minor | int or k8s_kubelet_minor | int < k8s_target_minor | int
       block:
+        # 更新中にパッチ自動更新が始まらないように、タイマーを止める
+        - name: Stop the patch upgrade timer
+          systemd:
+            name: k8s-patch-upgrade.timer
+            state: stopped
+
         - name: Upgrade kubeadm to the latest patch of the target minor version
           apt:
             name: "kubeadm={{ k8s_version }}.*"
@@ -115,6 +131,11 @@
         - name: Wait for the node to become Ready
           command: "kubectl wait --for=condition=Ready node/{{ k8s_node_name.stdout }} --timeout=300s"
           changed_when: false
+      always:
+        - name: Start the patch upgrade timer
+          systemd:
+            name: k8s-patch-upgrade.timer
+            state: started
 
     # 更新が途中で失敗して cordon されたままになった場合に、再実行で復旧できるようにする（単一ノード構成）
     - name: Get the node scheduling state

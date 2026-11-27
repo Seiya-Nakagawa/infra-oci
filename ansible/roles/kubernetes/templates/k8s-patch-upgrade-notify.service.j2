@@ -1,0 +1,6 @@
+[Unit]
+Description=Notify Kubernetes patch upgrade failure
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/k8s-patch-upgrade-notify.sh
