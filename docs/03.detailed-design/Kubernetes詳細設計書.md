@@ -196,6 +196,23 @@ kubeadmを使用して構成されるコントロールプレーンの基本方�
 - **ログ管理**: `/var/log/pods/` のログをホスト側でローテーション、または収集ツールで転送。
 - **バックアップ**: Etcd・PV は取得しない。クラスター構成は本リポジトリのコードから再構築して復旧する。データベースのデータは [MySQL詳細設計書](MySQL詳細設計書.md#42-バックアップ) のダンプで退避する。
 
+### 4.1. パッチバージョンの自動更新
+
+方式は [12章 12.4.3節](../02.design/12.lifecycle/12章_基本設計書_ライフサイクル管理方式.md#1243-パッチバージョンの自動更新) に従う。
+
+| 項目 | 設定値 |
+| ---- | ------ |
+| スクリプト | `/usr/local/sbin/k8s-patch-upgrade.sh`（`--dry-run` で内容確認） |
+| サービス | `k8s-patch-upgrade.service`（oneshot） |
+| タイマー | `k8s-patch-upgrade.timer`（`OnCalendar=*-*-* 04:00:00`、`Persistent=false`） |
+| 通知 | `k8s-patch-upgrade-notify.service`（サービスの `OnFailure` から起動）。通知先はバックアップ失敗と同じトピック |
+| バックアップの成功判定 | `mysql-backup.service` の直近の実行結果が成功で、終了日時が当日であること |
+| 失敗の記録 | `/var/lib/k8s-patch-upgrade/failed`。存在する間は更新しない |
+| drain のタイムアウト | 300 秒 |
+
+- ログは `journalctl -u k8s-patch-upgrade.service` で確認する
+- 失敗の記録がある場合は、原因に対処したうえで記録ファイルを削除する
+
 ## 5. 確認コマンド
 
 - **ノード状態**: `kubectl get nodes -o wide`
