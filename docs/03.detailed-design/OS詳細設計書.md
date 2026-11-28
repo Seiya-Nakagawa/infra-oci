@@ -77,8 +77,12 @@
 
 - **リポジトリ管理**: Ubuntu 24.04 準拠の DEB822 フォーマット (`/etc/apt/sources.list.d/ubuntu.sources`) を使用。
 - **自動更新 (`unattended-upgrades`)**:
-  - セキュリティアップデートのみ自動適用。
-  - 更新後の自動再起動機能は「無効」。メンテナンス窓にて手動（またはジョブ）で実施する。
+  - 適用する配布元（`Allowed-Origins`）: `noble`、`noble-updates`、`noble-security`、ESM、Docker（`noble`）。
+  - パッケージ一覧の取得（`apt-daily.timer`）は 03:20、適用（`apt-daily-upgrade.timer`）は 03:30。
+    どちらも `RandomizedDelaySec=0`、`Persistent=false`。
+  - 自動再起動は有効（`Automatic-Reboot "true"`、`Automatic-Reboot-Time "05:00"`）。
+  - 更新の失敗は `apt-daily-upgrade.service` の `OnFailure` から通知する。
+  - 再起動後の確認は、起動時に実行するサービスで行う。起動から 15 分以内に条件を満たさない場合に通知する。
 - **自動化阻害の抑止 (`needrestart`)**:
   - パッケージ更新時に表示される対話型プロンプトを抑制するため、`/etc/needrestart/needrestart.conf` にて `$nrconf{restart} = 'a';` (自動再起動) または `'l'` (リスト表示のみ) を設定し、Ansible の実行停止を防ぐ。
 - **共通導入パッケージ**:
